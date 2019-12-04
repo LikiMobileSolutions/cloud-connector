@@ -19,13 +19,15 @@ namespace SIM700x {
     //% weight=100 blockId="getSignalQuality" 
     //% block="GetSignalQuality"
     export function getSignalQuality(): number {
-        SendATCommand("AT+CSQ")
-    	if (ATCmdResponse.includes("+CSQ:")) {
-		signalStrengthRaw = ATCmdResponse.split(": ")[1]
+        let signalStrengthRaw = SendATCommand("AT+CSQ")
+	let signalStrengthLevel = -1
+    	if (signalStrengthRaw.includes("+CSQ:")) {
+		signalStrengthRaw = signalStrengthRaw.split(": ")[1]
 		signalStrengthRaw = signalStrengthRaw.split(",")[0]
 		signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 0, 4))
 	
     	}
+	return signalStrengthLevel
     }
     
     
