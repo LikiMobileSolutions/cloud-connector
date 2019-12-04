@@ -6,7 +6,7 @@
 namespace SIM700x {
 
     //% weight=100 blockId="SendATCommand" 
-    //% block="SendATCommand %atCommand"
+    //% block="SIM700x SendATCommand %atCommand"
     export function SendATCommand(atCommand: string): string {
         serial.redirect(SerialPin.P0,SerialPin.P1,BaudRate.BaudRate115200)
         serial.setWriteLinePadding(0)
@@ -17,7 +17,7 @@ namespace SIM700x {
     }
 
     //% weight=100 blockId="getSignalQuality" 
-    //% block="GetSignalQuality"
+    //% block="SIM700x GetSignalQuality"
     export function getSignalQuality(): number {
         let signalStrengthRaw = SendATCommand("AT+CSQ")
 	let signalStrengthLevel = -1
