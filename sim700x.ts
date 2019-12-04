@@ -8,8 +8,12 @@ namespace SIM700x {
     //% weight=100 blockId="SendATCommand" 
     //% block="SendATCommand %atCommand"
     export function SendATCommand(atCommand: string): string {
-        // Fake function for testing
-        return "test"
+        serial.redirect(SerialPin.P0,SerialPin.P1,BaudRate.BaudRate115200)
+        serial.setWriteLinePadding(0)
+        serial.setRxBufferSize(128)
+        serial.writeLine(AT)
+        control.waitMicros(1000)
+        return serial.readString()
     }
     
     
