@@ -11,7 +11,7 @@ namespace SIM700x {
         serial.redirect(SerialPin.P0,SerialPin.P1,BaudRate.BaudRate115200)
         serial.setWriteLinePadding(0)
         serial.setRxBufferSize(128)
-        serial.writeLine(AT)
+        serial.writeLine(atCommand)
         control.waitMicros(1000)
         return serial.readString()
     }
