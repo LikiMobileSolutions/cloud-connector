@@ -2,7 +2,7 @@
  * SIM700x block
  */
 
-//% color=#5042f4 icon="\f7c0"
+//% color=#5042f4 icon="\f012"
 namespace SIM700x {
 
     //% weight=100 blockId="SendATCommand" 
