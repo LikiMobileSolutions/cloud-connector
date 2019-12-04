@@ -1,6 +1,6 @@
 {
     "name": "pxt-sim700x",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "description": "",
     "dependencies": {
         "core": "*",
@@ -8,7 +8,7 @@
     },
     "files": [
         "README.md",
-        "main.ts"
+        "sim700x.ts"
     ],
     "testFiles": [
         "test.ts"
