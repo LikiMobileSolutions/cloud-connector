@@ -89,6 +89,49 @@ namespace SIM700x {
 		return signalStrengthLevel
 	}
 
+	
+	/**
+    	* Check registration status,
+	* return gsm network registration status as string
+    	*/
+	//% weight=100 blockId="getGSMRegistrationStatus" 
+	//% block="SIM700x GetGSMRegistrationStatus" group="2. Status: "
+	export function getGSMRegistrationStatus(): string {
+		let response = _SendATCommand("AT+CREG?")
+		let registrationStatusCode = -1;
+		let registartionStatusString="Internal error";
+		if (response.includes("+CREG:")) {
+			response = response.split(": ")[1]
+			registrationStatusCode = parseInt(response.split(",")[1])
+			switch(registrationStatusCode):
+				case 0:
+					registartionStatusString="not registered and not searching currently"
+					break
+				case 1:
+					registartionStatusString="registered and ready"
+					break
+				case 2:
+					registartionStatusString="not registered, searching..."
+					break
+				case 3:
+					registartionStatusString="registration denied"
+					break
+				case 4:
+					registartionStatusString="unknown"
+					break
+				case 5:
+					registartionStatusString="registered, roaming"
+					break
+				case 6:
+					registartionStatusString="registered for sms only"
+					break
+				default:
+					registartionStatusString="registration, code not defined: "+registrationStatusCode
+		}
+		return registartionStatusString
+	}
+
+
 	/**
     	*  Send sms message
 	*  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
