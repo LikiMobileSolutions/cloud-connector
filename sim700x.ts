@@ -9,11 +9,12 @@ namespace SIM700x {
 	let _SIM700RX_Pin=SerialPin.P0
 
 	/**
-    	* Define pins to which module is connected
+    	* Define pins to which module is connected(RX, TX referrs to pin names on SIM700x module)
     	*/
 	//% weight=100 blockId="SIM700Setup" 
 	//% block="SIM700x Setup RX: %SIM700RX_Pin TX: %SIM700TX_Pin"
-	export function Setup(SIM700RX_Pin: SerialPin, SIM700TX_Pin: SerialPin) {
+	//% SIM700TX_Pin.defl=SerialPin.P1 SIM700RX_Pin.defl=SerialPin.P0
+	export function Setup(SIM700TX_Pin: SerialPin, SIM700RX_Pin: SerialPin) {
 		_SIM700RX_Pin=SIM700RX_Pin
 		_SIM700TX_Pin=SIM700TX_Pin
 	}
