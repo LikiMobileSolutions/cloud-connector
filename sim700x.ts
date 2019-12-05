@@ -44,13 +44,23 @@ namespace SIM700x {
 		_SIM700BaudRate=SIM700BaudRate
 	}
 	
+	/**
+    	* 
+    	*/
+	//% weight=100 blockId="SIM700USBSerialLog" 
+	//% block="USBSerialLog %message"
+	//% group="4. Low level  and debug functions:"
+	export function USBSerialLog(message: string) {
+		serial.redirectToUSB()
+		serial.writeString(message)
+	}
 
 	/**
     	* Send plain AT command to modem and return response from it
     	*/
 	//% weight=100 blockId="SendATCommand" 
 	//% block="SIM700x SendATCommand %atCommand"
-	//% group="4. Low level functions:"
+	//% group="4. Low level  and debug functions:"
 	export function SendATCommand(atCommand: string): string {
 		return _SendATCommand(atCommand)
 	}
