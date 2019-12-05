@@ -9,6 +9,29 @@ namespace SIM700x {
 	let _SIM700RX_Pin=SerialPin.P0
 	let _SIM700BaudRate=BaudRate.BaudRate115200
 
+
+	
+	/**
+    	* (internal function)
+    	*/	
+	function _SendATCommand(atCommand: string, timeout=100): string {
+		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
+	    	serial.setWriteLinePadding(0)
+	    	serial.setRxBufferSize(128)
+	    	serial.writeLine(atCommand)
+
+	    	let startTs = input.runningTime()
+	    	let buffer = ""
+	    	while (input.runningTime() - startTs <= timeout) { //read until timeout is not exceeded
+			buffer += serial.readString()
+			if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
+		    		return buffer
+			}
+	    	}
+	    return buffer //timeout exceeded, anyway return buffer
+	}
+	
+
 	/**
     	* Define pins to which module is connected(RX, TX referrs to pin names on SIM700x module)
     	*/
@@ -29,12 +52,7 @@ namespace SIM700x {
 	//% block="SIM700x SendATCommand %atCommand"
 	//% group="4. Low level functions:"
 	export function SendATCommand(atCommand: string): string {
-		serial.redirect(_SIM700RX_Pin,_SIM700TX_Pin,BaudRate.BaudRate115200)
-		serial.setWriteLinePadding(0)
-		serial.setRxBufferSize(128)
-		serial.writeLine(atCommand)
-		control.waitMicros(1000)
-		return serial.readString()
+		return _SendATCommand(atCommand)
 	}
 
 	/**
@@ -62,13 +80,11 @@ namespace SIM700x {
 	*  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
     	*/
 	//% weight=100 blockId="sendSmsMessage" 
-	//% block="SIM700x sendSmsMessage to: %phone_num, content: %content "
-	//% block="SIM700x GetSignalQuality" group="3. GSM: "
+	//% block="SIM700x sendSmsMessage to: %phone_num, content: %content " group="3. GSM: "
 	export function sendSmsMessage(phone_num: string, content: string): string {
 		let modemResponse=""
 		SendATCommand("AT+CMGF=1")
 		SendATCommand('AT+CMGS="' + phone_num + '"')
-		basic.pause(100)
 		modemResponse=SendATCommand(content + "\x1A")
 		return modemResponse
 	}
