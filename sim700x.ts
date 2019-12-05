@@ -7,16 +7,18 @@ namespace SIM700x {
 	
 	let _SIM700TX_Pin=SerialPin.P1
 	let _SIM700RX_Pin=SerialPin.P0
+	let _SIM700BaudRate=BaudRate.BaudRate115200
 
 	/**
     	* Define pins to which module is connected(RX, TX referrs to pin names on SIM700x module)
     	*/
 	//% weight=100 blockId="SIM700Setup" 
-	//% block="SIM700x Setup RX: %SIM700RX_Pin TX: %SIM700TX_Pin"
-	//% SIM700TX_Pin.defl=SerialPin.P1 SIM700RX_Pin.defl=SerialPin.P0
-	export function Setup(SIM700TX_Pin: SerialPin, SIM700RX_Pin: SerialPin) {
+	//% block="SIM700x Setup RX: %SIM700RX_Pin TX: %SIM700TX_Pin Baud:%SIM700BaudRate"
+	//% SIM700TX_Pin.defl=SerialPin.P1 SIM700RX_Pin.defl=SerialPin.P0 SIM700BaudRate.defl=BaudRate.BaudRate115200
+	export function Setup(SIM700TX_Pin: SerialPin, SIM700RX_Pin: SerialPin, SIM700BaudRate: BaudRate) {
 		_SIM700RX_Pin=SIM700RX_Pin
 		_SIM700TX_Pin=SIM700TX_Pin
+		_SIM700BaudRate=SIM700BaudRate
 	}
 	
 
