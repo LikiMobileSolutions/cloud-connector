@@ -95,12 +95,10 @@ namespace SIM700x {
     	*/
 	//% weight=100 blockId="sendSmsMessage" 
 	//% block="SIM700x sendSmsMessage to: %phone_num, content: %content " group="3. GSM: "
-	export function sendSmsMessage(phone_num: string, content: string): string {
-		let modemResponse=""
-		SendATCommand("AT+CMGF=1")
-		SendATCommand('AT+CMGS="' + phone_num + '"')
-		modemResponse=SendATCommand(content + "\x1A")
-		return modemResponse
+	export function sendSmsMessage(phone_num: string, content: string) {
+		SendATCommand("AT+CMGF=1") // set text mode
+		SendATCommand('AT+CMGS="' + phone_num + '"') 
+		SendATCommand(content + "\x1A")
 	}
 
     
