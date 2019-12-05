@@ -113,7 +113,7 @@ namespace SIM700x {
 		if (response.includes("+CREG:")) {
 			response = response.split(": ")[1]
 			registrationStatusCode = parseInt(response.split(",")[1])
-			switch(registrationStatusCode):
+			switch(registrationStatusCode){
 				case 0:
 					registartionStatusString="not registered and not searching currently"
 					break
@@ -137,6 +137,7 @@ namespace SIM700x {
 					break
 				default:
 					registartionStatusString="registration, code not defined: "+registrationStatusCode
+			}
 		}
 		return registartionStatusString
 	}
