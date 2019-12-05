@@ -4,6 +4,20 @@
 
 //% color=#5042f4 icon="\uf093"
 namespace SIM700x {
+	
+	let _SIM700TX_Pin=SerialPin.P1
+	let _SIM700RX_Pin=SerialPin.P0
+
+	/**
+    	* Define pins to which module is connected
+    	*/
+	//% weight=100 blockId="SIM700Setup" 
+	//% block="SIM700x Setup RX: %SIM700RX_Pin TX: %SIM700TX_Pin"
+	export function Setup(SIM700RX_Pin: SerialPin, SIM700TX_Pin: SerialPin) {
+		_SIM700RX_Pin=SIM700RX_Pin
+		_SIM700TX_Pin=SIM700TX_Pin
+	}
+	
 
 	/**
     	* Send plain AT command to modem and return response from it
@@ -11,7 +25,7 @@ namespace SIM700x {
 	//% weight=100 blockId="SendATCommand" 
 	//% block="SIM700x SendATCommand %atCommand"
 	export function SendATCommand(atCommand: string): string {
-		serial.redirect(SerialPin.P0,SerialPin.P1,BaudRate.BaudRate115200)
+		serial.redirect(_SIM700RX_Pin,_SIM700TX_Pin,BaudRate.BaudRate115200)
 		serial.setWriteLinePadding(0)
 		serial.setRxBufferSize(128)
 		serial.writeLine(atCommand)
@@ -30,13 +44,10 @@ namespace SIM700x {
 		if (signalStrengthRaw.includes("+CSQ:")) {
 			signalStrengthRaw = signalStrengthRaw.split(": ")[1]
 			signalStrengthRaw = signalStrengthRaw.split(",")[0]
-			if(parseInt(signalStrengthRaw)!=99){ // 99 means that signal can't be fetched
+			if(parseInt(signalStrengthRaw) != 99){ // 99 means that signal can't be fetched
 				signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 0, 4))
-			}else{
-				signalStrengthLevel=-1
 			}
 			
-
 		}
 		return signalStrengthLevel
 	}
