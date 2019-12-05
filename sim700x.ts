@@ -68,15 +68,16 @@ namespace SIM700x {
 			return false;
 		}
 	}
+
 	/**
     	* get signal strength,
-	*  return in 0-4 range
-	*  return -1 if something is wrong and signal can't be fetched
+	* return in 0-4 range
+	* return -1 if something is wrong and signal can't be fetched
     	*/
 	//% weight=100 blockId="getSignalQuality" 
-	//% block="SIM700x GetSignalQuality" group="2. Basic: "
+	//% block="SIM700x GetSignalQuality" group="2. Status: "
 	export function getSignalQuality(): number {
-		let signalStrengthRaw = SendATCommand("AT+CSQ")
+		let signalStrengthRaw = _SendATCommand("AT+CSQ")
 		let signalStrengthLevel = -1
 		if (signalStrengthRaw.includes("+CSQ:")) {
 			signalStrengthRaw = signalStrengthRaw.split(": ")[1]
