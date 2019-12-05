@@ -56,6 +56,19 @@ namespace SIM700x {
 	}
 
 	/**
+    	* Check if module is up and responding properly to AT command
+    	*/
+	//% weight=100 blockId="isPoweredOn" 
+	//% block="SIM700x isPoweredOn" group="2. Status: "
+	export function isPoweredOn(): boolean {
+		let atResponse = _SendATCommand("AT")
+		if(atResponse.includes("AT") && atResponse.includes("OK")){
+			return true;
+		}else{
+			return false;
+		}
+	}
+	/**
     	* get signal strength,
 	*  return in 0-4 range
 	*  return -1 if something is wrong and signal can't be fetched
