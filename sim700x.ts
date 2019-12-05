@@ -68,9 +68,9 @@ namespace SIM700x {
 	/**
     	* Check if module is up and responding properly to AT command
     	*/
-	//% weight=100 blockId="isPoweredOn" 
-	//% block="SIM700x isPoweredOn" group="2. Status: "
-	export function isPoweredOn(): boolean {
+	//% weight=100 blockId="isEnabled" 
+	//% block="SIM700x isEnabled" group="2. Status: "
+	export function isEnabled(): boolean {
 		let atResponse = _SendATCommand("AT")
 		if(atResponse.includes("AT") && atResponse.includes("OK")){
 			return true;
