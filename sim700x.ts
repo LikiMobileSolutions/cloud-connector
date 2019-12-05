@@ -109,30 +109,30 @@ namespace SIM700x {
 	export function getGSMRegistrationStatus(): string {
 		let response = _SendATCommand("AT+CREG?")
 		let registrationStatusCode = -1;
-		let registartionStatusString="Internal error";
+		let registartionStatusString="error, check connections and power supply";
 		if (response.includes("+CREG:")) {
-			response = response.split(": ")[1]
-			registrationStatusCode = parseInt(response.split(",")[1])
+			response = response.split(",")[1]
+			registrationStatusCode = parseInt(response.split("\r\n")[0])
 			switch(registrationStatusCode){
-				case 0:
+				case (0):
 					registartionStatusString="not registered and not searching currently"
 					break
-				case 1:
+				case (1):
 					registartionStatusString="registered and ready"
 					break
-				case 2:
+				case (2):
 					registartionStatusString="not registered, searching..."
 					break
-				case 3:
+				case (3):
 					registartionStatusString="registration denied"
 					break
-				case 4:
+				case (4):
 					registartionStatusString="unknown"
 					break
-				case 5:
+				case (5):
 					registartionStatusString="registered, roaming"
 					break
-				case 6:
+				case (6):
 					registartionStatusString="registered for sms only"
 					break
 				default:
