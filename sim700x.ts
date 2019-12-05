@@ -52,7 +52,7 @@ namespace SIM700x {
 	//% group="4. Low level  and debug functions:"
 	export function USBSerialLog(message: string) {
 		serial.redirectToUSB()
-		serial.writeString(message)
+		serial.writeLine(message)
 	}
 
 	/**
