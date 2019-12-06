@@ -43,7 +43,23 @@ namespace SIM700x {
 		_SIM700TX_Pin=SIM700TX_Pin
 		_SIM700BaudRate=SIM700BaudRate
 	}
-	
+
+	/**
+    	* Init module 
+    	*/
+	//% weight=100 blockId="SIM700Init" 
+	//% block="SIM700x Init"
+	//% group="1. Setup: "
+	export function Init() {
+		let atResponse = _SendATCommand("AT")
+		while( !(atResponse.includes("AT") && atResponse.includes("OK")) ){ //check in loop if echo is enabled
+			_SendATCommand("ATE 1")
+			atResponse = _SendATCommand("AT")
+			basic.pause(1)
+			//TODO: considering adding limit of checks here to not block program
+		}
+	}
+
 	/**
     	* 
     	*/
