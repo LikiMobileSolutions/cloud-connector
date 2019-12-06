@@ -66,6 +66,16 @@ namespace SIM700x {
 	}
 
 	/**
+    	* Send plain AT command to modem wait for response up to timeout and return modem response
+    	*/
+	//% weight=100 blockId="SendATCommandSetTimeout" 
+	//% block="SIM700x SendATCommand %atCommand timeout: %timeout"
+	//% timeout.defl=100 group="4. Low level  and debug functions:"
+	export function SendATCommandSetTimeout(atCommand: string, timeout: number): string {
+		return _SendATCommand(atCommand, timeout)
+	}
+
+	/**
     	* Check if module is up and responding properly to AT command
     	*/
 	//% weight=100 blockId="isEnabled" 
