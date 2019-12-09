@@ -131,8 +131,18 @@ namespace SIM700x {
 	//% weight=100 blockId="SIM700MqttPublish" 
 	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message" group="4. Network:"
 	export function MqttPublish(topic: string, message: string) {
-		SendATCommand('AT+SMPUB="dev/data",' + publishMsg.length + ',0,1')
+		SendATCommand('AT+SMPUB="'+topic+'",' + message.length + ',0,1')
 		serial.writeString(message)
+	}
+
+	/**
+    	* MQTT live object publish message
+    	*/
+	//% weight=100 blockId="SIM700MqttLiveObjectPublish" 
+	//% block="SIM700x Live object publish stream:%stream value:%value" group="4. Network:"
+	export function LiveObjectPublish(stream: string, value: string) {
+		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp": "2019-12-09 09:00:00", "value":"'+value+'"} }'
+		MqttPublish("dev/data",liveObjectMsg)
 	}
 
 
