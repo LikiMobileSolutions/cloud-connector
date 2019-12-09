@@ -148,44 +148,19 @@ namespace SIM700x {
 	
 	/**
     	* Check registration status,
-	* return gsm network registration status as string
+	* return gsm network registration status as code, 2 or 5 mean sucessfull registartion
     	*/
 	//% weight=100 blockId="getGSMRegistrationStatus" 
 	//% block="SIM700x GetGSMRegistrationStatus" group="2. Status: "
-	export function getGSMRegistrationStatus(): string {
+	export function getGSMRegistrationStatus(): number {
 		let response = _SendATCommand("AT+CREG?")
 		let registrationStatusCode = -1;
-		let registartionStatusString="error, check connections and power supply";
 		if (response.includes("+CREG:")) {
 			response = response.split(",")[1]
 			registrationStatusCode = parseInt(response.split("\r\n")[0])
-			switch(registrationStatusCode){
-				case (0):
-					registartionStatusString="not registered and not searching currently"
-					break
-				case (1):
-					registartionStatusString="registered and ready"
-					break
-				case (2):
-					registartionStatusString="not registered, searching..."
-					break
-				case (3):
-					registartionStatusString="registration denied"
-					break
-				case (4):
-					registartionStatusString="unknown"
-					break
-				case (5):
-					registartionStatusString="registered, roaming"
-					break
-				case (6):
-					registartionStatusString="registered for sms only"
-					break
-				default:
-					registartionStatusString="registration, code not defined: "+registrationStatusCode
-			}
+
 		}
-		return registartionStatusString
+		return registartionStatusCode
 	}
 
 
