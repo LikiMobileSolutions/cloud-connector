@@ -125,6 +125,16 @@ namespace SIM700x {
 		_SendATCommand("AT+SMCONN", 5000)
 	}
 
+	/**
+    	* MQTT publish message
+    	*/
+	//% weight=100 blockId="SIM700MqttPublish" 
+	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message" group="4. Network:"
+	export function MqttPublish(topic: string, message: string) {
+		SendATCommand('AT+SMPUB="dev/data",' + publishMsg.length + ',0,1')
+		serial.writeString(message)
+	}
+
 
 	/**
     	* 
