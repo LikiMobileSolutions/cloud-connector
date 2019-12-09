@@ -14,7 +14,7 @@ namespace SIM700x {
 	/**
     	* (internal function)
     	*/	
-	function _SendATCommand(atCommand: string, timeout=100): string {
+	function _SendATCommand(atCommand: string, timeout=1000): string {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
 	    	serial.setRxBufferSize(128)
@@ -55,6 +55,7 @@ namespace SIM700x {
 		while( !(atResponse.includes("AT") && atResponse.includes("OK")) ){ //check in loop if echo is enabled
 			_SendATCommand("ATE 1")
 			atResponse = _SendATCommand("AT")
+			USBSerialLog(atResponse)
 			basic.pause(1)
 			//TODO: considering adding limit of checks here to not block program
 		}
