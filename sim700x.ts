@@ -51,12 +51,58 @@ namespace SIM700x {
 		}
 	}
 
+
+	
+	/**
+    	* get signal strength,
+	* return in 0-4 range
+	* return -1 if something is wrong and signal can't be fetched
+    	*/
+	//% weight=100 blockId="getSignalQuality" 
+	//% block="SIM700x GetSignalQuality" group="2. Status: "
+	export function getSignalQuality(): number {
+		let signalStrengthRaw = _SendATCommand("AT+CSQ")
+		let signalStrengthLevel = -1
+		if (signalStrengthRaw.includes("+CSQ:")) {
+			signalStrengthRaw = signalStrengthRaw.split(": ")[1]
+			signalStrengthRaw = signalStrengthRaw.split(",")[0]
+			if(parseInt(signalStrengthRaw) != 99){ // 99 means that signal can't be fetched
+				signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 0, 4))
+			}
+		}
+		return signalStrengthLevel
+	}
+
+	
+	/**
+	* return gsm network registration status as code, 1 or 5 mean sucessfull registartion
+    	*/
+	//% weight=100 blockId="getGSMRegistrationStatus" 
+	//% block="SIM700x GetGSMRegistrationStatus" group="2. Status: "
+	export function getGSMRegistrationStatus(): number {
+		let response = _SendATCommand("AT+CREG?")
+		let registrationStatusCode = -1;
+		if (response.includes("+CREG:")) {
+			response = response.split(",")[1]
+			registrationStatusCode = parseInt(response.split("\r\n")[0])
+
+		}
+		return registrationStatusCode
+	}
+
+
 	/**
     	* Network init
     	*/
 	//% weight=100 blockId="SIM700InitNetwork" 
 	//% block="SIM700x network init: APNname:%ApnName" group="4. Network:"
 	export function InitNetwork(ApnName: string) {
+
+		let gsmStatus=getGSMRegistrationStatus()
+		while(!(gsmStatus==1 || gsmStatus==5)){
+			gsmStatus=getGSMRegistrationStatus()
+			basic.pause(500)
+		}
 		_SendATCommand('AT+CNACT=1,"'+ApnName+'"')
 		basic.pause(1000)
 		let netStatus=_SendATCommand('AT+CNACT?')
@@ -124,45 +170,6 @@ namespace SIM700x {
 			return false;
 		}
 	}
-
-	/**
-    	* get signal strength,
-	* return in 0-4 range
-	* return -1 if something is wrong and signal can't be fetched
-    	*/
-	//% weight=100 blockId="getSignalQuality" 
-	//% block="SIM700x GetSignalQuality" group="2. Status: "
-	export function getSignalQuality(): number {
-		let signalStrengthRaw = _SendATCommand("AT+CSQ")
-		let signalStrengthLevel = -1
-		if (signalStrengthRaw.includes("+CSQ:")) {
-			signalStrengthRaw = signalStrengthRaw.split(": ")[1]
-			signalStrengthRaw = signalStrengthRaw.split(",")[0]
-			if(parseInt(signalStrengthRaw) != 99){ // 99 means that signal can't be fetched
-				signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 0, 4))
-			}
-		}
-		return signalStrengthLevel
-	}
-
-	
-	/**
-    	* Check registration status,
-	* return gsm network registration status as code, 2 or 5 mean sucessfull registartion
-    	*/
-	//% weight=100 blockId="getGSMRegistrationStatus" 
-	//% block="SIM700x GetGSMRegistrationStatus" group="2. Status: "
-	export function getGSMRegistrationStatus(): number {
-		let response = _SendATCommand("AT+CREG?")
-		let registrationStatusCode = -1;
-		if (response.includes("+CREG:")) {
-			response = response.split(",")[1]
-			registrationStatusCode = parseInt(response.split("\r\n")[0])
-
-		}
-		return registartionStatusCode
-	}
-
 
 	/**
     	*  Send sms message
