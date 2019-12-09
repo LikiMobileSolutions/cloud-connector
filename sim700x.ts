@@ -31,42 +31,61 @@ namespace SIM700x {
 	    return buffer //timeout exceeded, anyway return buffer
 	}
 	
-
-	/**
-    	* Define pins to which module is connected(RX, TX referrs to pin names on SIM700x module)
-    	*/
-	//% weight=100 blockId="SIM700Setup" 
-	//% block="SIM700x Setup RX: %SIM700RX_Pin TX: %SIM700TX_Pin Baud:%SIM700BaudRate"
-	//% SIM700TX_Pin.defl=SerialPin.P1 SIM700RX_Pin.defl=SerialPin.P0 SIM700BaudRate.defl=BaudRate.BaudRate115200 group="1. Setup: "
-	export function Setup(SIM700TX_Pin: SerialPin, SIM700RX_Pin: SerialPin, SIM700BaudRate: BaudRate) {
-		_SIM700RX_Pin=SIM700RX_Pin
-		_SIM700TX_Pin=SIM700TX_Pin
-		_SIM700BaudRate=SIM700BaudRate
-	}
-
 	/**
     	* Init module 
     	*/
 	//% weight=100 blockId="SIM700Init" 
-	//% block="SIM700x Init"
-	//% group="1. Setup: "
-	export function Init() {
+	//% block="SIM700x Init RX: %SIM700RX_Pin TX: %SIM700TX_Pin Baud:%SIM700BaudRate"
+	//% SIM700TX_Pin.defl=SerialPin.P1 SIM700RX_Pin.defl=SerialPin.P0 SIM700BaudRate.defl=BaudRate.BaudRate115200 group="1. Setup: "
+	export function Init(SIM700TX_Pin: SerialPin, SIM700RX_Pin: SerialPin, SIM700BaudRate: BaudRate) {
+		_SIM700RX_Pin=SIM700RX_Pin
+		_SIM700TX_Pin=SIM700TX_Pin
+		_SIM700BaudRate=SIM700BaudRate
+
 		let atResponse = _SendATCommand("AT")
 		while( !(atResponse.includes("AT") && atResponse.includes("OK")) ){ //check in loop if echo is enabled
 			_SendATCommand("ATE 1")
 			atResponse = _SendATCommand("AT")
-			USBSerialLog(atResponse)
 			basic.pause(1)
 			//TODO: considering adding limit of checks here to not block program
 		}
 	}
 
 	/**
+    	* Network init
+    	*/
+	//% weight=100 blockId="SIM700InitNetwork" 
+	//% block="SIM700x network init: APNname:%ApnName" group="4. Network:"
+	export function InitNetwork(ApnName: string) {
+		_SendATCommand('AT+CNACT=1,"'+ApnName+'"')
+		basic.pause(1000)
+		let netStatus=_SendATCommand('AT+CNACT?')
+		while(!netStatus.includes("+CNACT: 1")){
+			basic.pause(1000)
+			netStatus=_SendATCommand('AT+CNACT?')
+		}
+	}
+
+	/**
+    	* MQTT init
+    	*/
+	//% weight=100 blockId="SIM700InitMQTT" 
+	//% block="SIM700x MQTT init BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. Network:"
+	export function InitMQTT(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
+		_SendATCommand('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
+		_SendATCommand('AT+SMCONF="CLIENTID","'+clientId+'"')
+		_SendATCommand('AT+SMCONF="USERNAME","'+username+'"')
+		_SendATCommand('AT+SMCONF="PASSWORD","'+password+'"')
+		_SendATCommand("AT+SMCONN", 5000)
+	}
+
+
+	/**
     	* 
     	*/
 	//% weight=100 blockId="SIM700USBSerialLog" 
 	//% block="USBSerialLog %message"
-	//% group="4. Low level  and debug functions:"
+	//% group="5. Low level  and debug functions:"
 	export function USBSerialLog(message: string) {
 		serial.redirectToUSB()
 		serial.writeLine(message)
@@ -77,7 +96,7 @@ namespace SIM700x {
     	*/
 	//% weight=100 blockId="SendATCommand" 
 	//% block="SIM700x SendATCommand %atCommand"
-	//% group="4. Low level  and debug functions:"
+	//% group="5. Low level  and debug functions:"
 	export function SendATCommand(atCommand: string): string {
 		return _SendATCommand(atCommand)
 	}
@@ -87,7 +106,7 @@ namespace SIM700x {
     	*/
 	//% weight=100 blockId="SendATCommandSetTimeout" 
 	//% block="SIM700x SendATCommand %atCommand timeout: %timeout"
-	//% timeout.defl=100 group="4. Low level  and debug functions:"
+	//% timeout.defl=100 group="5. Low level  and debug functions:"
 	export function SendATCommandSetTimeout(atCommand: string, timeout: number): string {
 		return _SendATCommand(atCommand, timeout)
 	}
@@ -181,6 +200,7 @@ namespace SIM700x {
 		SendATCommand('AT+CMGS="' + phone_num + '"') 
 		SendATCommand(content + "\x1A")
 	}
+
 
     
 }
