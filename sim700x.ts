@@ -106,9 +106,15 @@ namespace SIM700x {
 		_SendATCommand('AT+CNACT=1,"'+ApnName+'"')
 		basic.pause(1000)
 		let netStatus=_SendATCommand('AT+CNACT?')
+		let tries = 0
 		while(!netStatus.includes("+CNACT: 1")){
+			if(tries>=5){
+				_SendATCommand('AT+CNACT=1,"'+ApnName+'"')
+				tries=0
+			}
 			basic.pause(1000)
 			netStatus=_SendATCommand('AT+CNACT?')
+			tries++
 		}
 	}
 
