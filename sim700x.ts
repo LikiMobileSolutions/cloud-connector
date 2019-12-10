@@ -122,7 +122,8 @@ namespace SIM700x {
     	* MQTT init
     	*/
 	//% weight=100 blockId="SIM700InitMQTT"
-	//% block="SIM700x MQTT init BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. Network:"
+	//% block="SIM700x MQTT init BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username || passwd:%password" group="4. Network:"
+	//% expandableArgumentMode="enabled"
 	export function InitMQTT(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
 		_SendATCommand('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
 		_SendATCommand('AT+SMCONF="CLIENTID","'+clientId+'"')
