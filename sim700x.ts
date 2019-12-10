@@ -108,7 +108,7 @@ namespace SIM700x {
 		let netStatus=_SendATCommand('AT+CNACT?')
 		let tries = 0
 		while(!netStatus.includes("+CNACT: 1")){
-			if(tries>=5){
+			if(tries>=8){
 				_SendATCommand('AT+CNACT=1,"'+ApnName+'"')
 				tries=0
 			}
