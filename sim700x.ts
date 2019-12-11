@@ -17,7 +17,7 @@ namespace SIM700x {
 	function _SendATCommand(atCommand: string, timeout=1000): string {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
-	    	serial.setRxBufferSize(128)
+	    	serial.setRxBufferSize(255)
 		serial.readString() // "workaround" to flush buffer
 	    	serial.writeLine(atCommand)
 
