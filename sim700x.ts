@@ -18,6 +18,7 @@ namespace SIM700x {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
 	    	serial.setRxBufferSize(128)
+		serial.readString() // "workaround" to flush buffer
 	    	serial.writeLine(atCommand)
 
 	    	let startTs = input.runningTime()
