@@ -22,7 +22,7 @@ namespace SIM700x {
 
 	    	let startTs = input.runningTime()
 	    	let buffer = ""
-	    	while (input.runningTime() - startTs <= timeout) { //read until timeout is not exceeded
+	    	while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
 			buffer += serial.readString()
 			if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
 		    		return buffer
@@ -128,7 +128,7 @@ namespace SIM700x {
 		_SendATCommand('AT+SMCONF="CLIENTID","'+clientId+'"')
 		_SendATCommand('AT+SMCONF="USERNAME","'+username+'"')
 		_SendATCommand('AT+SMCONF="PASSWORD","'+password+'"')
-		_SendATCommand("AT+SMCONN", 5000)
+		_SendATCommand("AT+SMCONN", -1)
 	}
 
 	/**
