@@ -148,11 +148,9 @@ namespace SIM700x {
 	//% block="SIM700x Live object publish stream:%stream data:%data" group="4. Network:"
 	export function LiveObjectPublish(stream: string, data: string[]) {
 		let dataString = ''
-		if(data.length != 0){
-			dataString+=","
-			for(let i=0; i<data.length; i++){
-	    	dataString+='"'+i+'":"'+data[i]+'"'
-			}
+		for(let i=0; i<data.length; i++){
+	    		dataString+=',"'+i+'":"'+data[i]+'"'
+			
 		}
 
 		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp": "2100-01-01 09:00:00"'+dataString+'} }'
