@@ -20,12 +20,12 @@ namespace SIM700x {
 	    	serial.setRxBufferSize(128)
 		//serial.readString() // "workaround" to flush buffer
 		serial.writeLine(atCommand)
-		/*
+		
 		if(useNewline){
 	    		serial.writeLine(atCommand)
 		}else{
 			serial.writeString(atCommand)
-		}*/
+		}
 
 	    	let startTs = input.runningTime()
 	    	let buffer = ""
@@ -150,8 +150,8 @@ namespace SIM700x {
 	export function MqttPublish(topic: string, message: string) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ',0,1'
 		_SendATCommand(cmd)
-		_SendATCommand(message,5000,false)
-		//serial.writeString(message)
+		//_SendATCommand(message,5000,false)
+		serial.writeString(message)
 	}
 
 	/**
