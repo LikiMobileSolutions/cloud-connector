@@ -17,13 +17,15 @@ namespace SIM700x {
 	function _SendATCommand(atCommand: string, timeout=1000, useNewline=true): string {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
-	    	serial.setRxBufferSize(255)
-		serial.readString() // "workaround" to flush buffer
+	    	serial.setRxBufferSize(128)
+		//serial.readString() // "workaround" to flush buffer
+		serial.writeLine(atCommand)
+		/*
 		if(useNewline){
 	    		serial.writeLine(atCommand)
 		}else{
 			serial.writeString(atCommand)
-		}
+		}*/
 
 	    	let startTs = input.runningTime()
 	    	let buffer = ""
