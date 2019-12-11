@@ -138,7 +138,8 @@ namespace SIM700x {
 	//% weight=100 blockId="SIM700MqttPublish"
 	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message" group="4. Network:"
 	export function MqttPublish(topic: string, message: string) {
-		SendATCommand('AT+SMPUB="'+topic+'",' + message.length + ',0,1')
+		let cmd='AT+SMPUB="'+topic+'",' + message.length + ',0,1'
+		_SendATCommand(cmd, 10000)
 		serial.writeString(message)
 	}
 
