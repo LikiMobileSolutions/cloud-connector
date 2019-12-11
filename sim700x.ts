@@ -14,12 +14,16 @@ namespace SIM700x {
 	/**
     	* (internal function)
     	*/
-	function _SendATCommand(atCommand: string, timeout=1000): string {
+	function _SendATCommand(atCommand: string, timeout=1000, useNewline=true): string {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
 	    	serial.setRxBufferSize(255)
 		serial.readString() // "workaround" to flush buffer
-	    	serial.writeLine(atCommand)
+		if(useNewline){
+	    		serial.writeLine(atCommand)
+		}else{
+			serial.writeString(atCommand)
+		}
 
 	    	let startTs = input.runningTime()
 	    	let buffer = ""
@@ -139,8 +143,9 @@ namespace SIM700x {
 	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message" group="4. Network:"
 	export function MqttPublish(topic: string, message: string) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ',0,1'
-		_SendATCommand(cmd, 10000)
-		serial.writeString(message)
+		_SendATCommand(cmd)
+		_SendATCommand(message,5000,false)
+		//serial.writeString(message)
 	}
 
 	/**
