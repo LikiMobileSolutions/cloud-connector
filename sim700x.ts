@@ -30,8 +30,9 @@ namespace SIM700x {
 	    	while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
 			buffer += serial.readString()
 			if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
-		    		return buffer
+		    		break;
 			}
+			basic.pause(100) //it's minimal timeout
 	    	}
 	    return buffer //timeout exceeded, anyway return buffer
 	}
@@ -50,8 +51,7 @@ namespace SIM700x {
 		let atResponse = _SendATCommand("AT")
 		while( !(atResponse.includes("AT") && atResponse.includes("OK")) ){ //check in loop if echo is enabled
 			_SendATCommand("ATE 1")
-			atResponse = _SendATCommand("AT")
-			basic.pause(1)
+			atResponse = _SendATCommand("AT",2000)
 			//TODO: considering adding limit of checks here to not block program
 		}
 	}
