@@ -49,10 +49,14 @@ namespace SIM700x {
 		_SIM700BaudRate=SIM700BaudRate
 
 		let atResponse = _SendATCommand("AT")
+		let checks=0
 		while( !(atResponse.includes("AT") && atResponse.includes("OK")) ){ //check in loop if echo is enabled
 			_SendATCommand("ATE 1")
-			atResponse = _SendATCommand("AT",2000)
-			//TODO: considering adding limit of checks here to not block program
+			atResponse = _SendATCommand("AT",1000)
+			if(checks>=10){
+				break;
+			}
+			checks++
 		}
 	}
 
