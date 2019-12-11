@@ -32,9 +32,8 @@ namespace SIM700x {
 	    	while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
 			buffer += serial.readString()
 			if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
-		    		break;
+		    		return buffer
 			}
-			basic.pause(100) //it's minimal timeout
 	    	}
 	    return buffer //timeout exceeded, anyway return buffer
 	}
@@ -150,7 +149,6 @@ namespace SIM700x {
 	export function MqttPublish(topic: string, message: string) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ',0,1'
 		_SendATCommand(cmd)
-		//_SendATCommand(message,5000,false)
 		serial.writeString(message)
 	}
 
