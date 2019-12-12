@@ -100,6 +100,18 @@ namespace SIM700x {
 		return registrationStatusCode
 	}
 
+	/**
+    	*  Send sms message
+	*  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
+    	*/
+	//% weight=100 blockId="sendSmsMessage"
+	//% block="SIM700x sendSmsMessage to: %phone_num, content: %content " group="3. GSM: "
+	export function sendSmsMessage(phone_num: string, content: string) {
+		_SendATCommand("AT+CMGF=1") // set text mode
+		_SendATCommand('AT+CMGS="' + phone_num + '"')
+		_SendATCommand(content + "\x1A")
+	}
+
 
 	/**
     	* Network init
@@ -197,17 +209,7 @@ namespace SIM700x {
 	}
 
 
-	/**
-    	*  Send sms message
-	*  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
-    	*/
-	//% weight=100 blockId="sendSmsMessage"
-	//% block="SIM700x sendSmsMessage to: %phone_num, content: %content " group="3. GSM: "
-	export function sendSmsMessage(phone_num: string, content: string) {
-		SendATCommand("AT+CMGF=1") // set text mode
-		SendATCommand('AT+CMGS="' + phone_num + '"')
-		SendATCommand(content + "\x1A")
-	}
+
 
 
 
