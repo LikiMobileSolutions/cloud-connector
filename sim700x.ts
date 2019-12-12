@@ -184,21 +184,18 @@ namespace SIM700x {
     	* Send plain AT command to modem and return response from it
     	*/
 	//% weight=100 blockId="SendATCommand"
-	//% block="SIM700x SendATCommand %atCommand"
+	//% block="SIM700x SendATCommand %atCommand || timeout:%timeout"
+	//% timeout.defl=1000 expandableArgumentMode="toggle"
 	//% group="5. Low level  and debug functions:"
-	export function SendATCommand(atCommand: string): string {
-		return _SendATCommand(atCommand)
+	export function SendATCommand(atCommand: string, timeout?: number): string {
+		if( !(timeout === void 0) ){
+			return _SendATCommand(atCommand,timeout)
+		}else{
+			return _SendATCommand(atCommand)
+		}
+		
 	}
 
-	/**
-    	* Send plain AT command to modem wait for response up to timeout and return modem response
-    	*/
-	//% weight=100 blockId="SendATCommandSetTimeout"
-	//% block="SIM700x SendATCommand %atCommand timeout: %timeout"
-	//% timeout.defl=100 group="5. Low level  and debug functions:"
-	export function SendATCommandSetTimeout(atCommand: string, timeout: number): string {
-		return _SendATCommand(atCommand, timeout)
-	}
 
 	/**
     	*  Send sms message
