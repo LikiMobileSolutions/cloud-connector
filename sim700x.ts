@@ -157,9 +157,9 @@ namespace SIM700x {
     	* MQTT publish message
     	*/
 	//% weight=100 blockId="SIM700MqttPublish"
-	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message" group="4. Network:"
-	export function MqttPublish(topic: string, message: string) {
-		let cmd='AT+SMPUB="'+topic+'",' + message.length + ',0,1'
+	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message || qos:%qos retain:%retain" group="4. Network:"
+	export function MqttPublish(topic: string, message: string, qos=0, retain=0) {
+		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
 		serial.writeString(message)
 	}
