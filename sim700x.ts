@@ -19,7 +19,7 @@ namespace SIM700x {
 	    	serial.setWriteLinePadding(0)
 	    	serial.setRxBufferSize(128)
 		//serial.readString() // "workaround" to flush buffer
-		serial.writeLine(atCommand)
+		//serial.writeLine(atCommand)
 		
 		if(useNewline){
 	    		serial.writeLine(atCommand)
