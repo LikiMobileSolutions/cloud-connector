@@ -201,20 +201,6 @@ namespace SIM700x {
 	}
 
 	/**
-    	* Check if module is up and responding properly to AT command
-    	*/
-	//% weight=100 blockId="isEnabled"
-	//% block="SIM700x isEnabled" group="2. Status: "
-	export function isEnabled(): boolean {
-		let atResponse = _SendATCommand("AT")
-		if(atResponse.includes("AT") && atResponse.includes("OK")){
-			return true;
-		}else{
-			return false;
-		}
-	}
-
-	/**
     	*  Send sms message
 	*  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
     	*/
