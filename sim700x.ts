@@ -14,19 +14,14 @@ namespace SIM700x {
 	/**
     	* (internal function)
     	*/
-	function _SendATCommand(atCommand: string, timeout=1000, useNewline=true): string {
+	function _SendATCommand(atCommand: string, timeout=1000): string {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
 	    	serial.setRxBufferSize(128)
 		//serial.readString() // "workaround" to flush buffer
-		//serial.writeLine(atCommand)
 		
-		if(useNewline){
-	    		serial.writeLine(atCommand)
-		}else{
-			serial.writeString(atCommand)
-		}
-
+	    	serial.writeLine(atCommand)
+	
 	    	let startTs = input.runningTime()
 	    	let buffer = ""
 	    	while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
@@ -163,7 +158,6 @@ namespace SIM700x {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
 		serial.writeString(message)
-		//_SendATCommand(message,1000,false)
 	}
 
 	/**
