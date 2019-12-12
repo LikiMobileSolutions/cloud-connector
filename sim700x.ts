@@ -200,7 +200,7 @@ namespace SIM700x {
 	//% timeout.defl=1000 expandableArgumentMode="toggle"
 	//% group="5. Low level  and debug functions:"
 	export function SendATCommand(atCommand: string, timeout?: number): string {
-		if( !(timeout === void 0) ){
+		if(timeout){
 			return _SendATCommand(atCommand,timeout)
 		}else{
 			return _SendATCommand(atCommand)
