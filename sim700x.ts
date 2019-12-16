@@ -14,7 +14,7 @@ namespace SIM700x {
 	/**
     	* (internal function)
     	*/
-	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=false): string {
+	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=true): string {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
 	    	serial.setRxBufferSize(128)
