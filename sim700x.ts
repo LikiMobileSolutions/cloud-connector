@@ -173,6 +173,16 @@ namespace SIM700x {
 		_SendATCommand(cmd,100)
 		let modemResponse=_SendATCommand(message,1000,false)
 
+		if(modemResponse.includes("ERROR")){
+			_SendATCommand("AT+SMDISC")
+			_SendATCommand("AT+SMCONN")
+			
+			_SendATCommand(cmd,100)
+			modemResponse=_SendATCommand(message,1000,false)
+		}
+
+
+
 	}
 
 	/**
