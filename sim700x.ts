@@ -168,7 +168,7 @@ namespace SIM700x {
 	//% weight=100 blockId="SIM700MqttPublish"
 	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message || qos:%qos retain:%retain" group="4. Network:"
 	//% qos.defl=0 retain.defl=0 expandableArgumentMode="toggle"
-	export function MqttPublish(topic: string, message: string, qos=0, retain=0) {
+	export function MqttPublish(topic: string, message: string, qos=2, retain=0) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
 		let modemResponse=_SendATCommand(message,1000,false)
