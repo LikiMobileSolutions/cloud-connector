@@ -37,6 +37,17 @@ namespace SIM700x {
 	}
 
 	/**
+			* (internal function)
+			*/
+	function _sendATCommandCheckACK(atCommand: string) {
+		let modemResponse = _SendATCommand(atCommand,-1)
+		while(modemResponse.includes("ERROR")){
+				modemResponse = _SendATCommand(atCommand,-1)
+				basic.pause(200)
+		}
+	}
+
+	/**
     	* Init module
     	*/
 	//% weight=100 blockId="SIM700Init"
@@ -144,11 +155,11 @@ namespace SIM700x {
 	//% weight=100 blockId="SIM700InitMQTT"
 	//% block="SIM700x MQTT init BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. Network:"
 	export function InitMQTT(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
-		_SendATCommandCheckACK('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
-		_SendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
-		_SendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
-		_SendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
-		_SendATCommandCheckACK("AT+SMCONN")
+		_SendATCommand('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
+		_SendATCommand('AT+SMCONF="CLIENTID","'+clientId+'"')
+		_SendATCommand('AT+SMCONF="USERNAME","'+username+'"')
+		_SendATCommand('AT+SMCONF="PASSWORD","'+password+'"')
+		_SendATCommand("AT+SMCONN", -1)
 	}
 
 	/**
