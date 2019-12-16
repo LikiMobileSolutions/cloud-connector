@@ -171,7 +171,7 @@ namespace SIM700x {
 	export function MqttPublish(topic: string, message: string, qos=0, retain=0) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
-		let modemResponse=_SendATCommand(message,-1,false)
+		let modemResponse=_SendATCommand(message,1000,false)
 
 	}
 
