@@ -14,14 +14,17 @@ namespace SIM700x {
 	/**
     	* (internal function)
     	*/
-	function _SendATCommand(atCommand: string, timeout=1000): string {
+	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=false): string {
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	    	serial.setWriteLinePadding(0)
 	    	serial.setRxBufferSize(128)
-		//serial.readString() // "workaround" to flush buffer
-		
-	    	serial.writeLine(atCommand)
-	
+				if(useNewLine){
+					serial.writeLine(atCommand)
+				}else{
+					serial.writeString(atCommand)
+				}
+
+
 	    	let startTs = input.runningTime()
 	    	let buffer = ""
 	    	while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
@@ -157,7 +160,8 @@ namespace SIM700x {
 	export function MqttPublish(topic: string, message: string, qos=0, retain=0) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
-		serial.writeString(message)
+		let modemResponse=_SendATCommand(message,-1,false)
+
 	}
 
 	/**
@@ -169,7 +173,7 @@ namespace SIM700x {
 		let dataString = ''
 		for(let i=0; i<data.length; i++){
 	    		dataString+=',"'+i+'":"'+data[i]+'"'
-			
+
 		}
 
 		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp": "2100-01-01 09:00:00"'+dataString+'} }'
@@ -201,7 +205,7 @@ namespace SIM700x {
 		}else{
 			return _SendATCommand(atCommand)
 		}
-		
+
 	}
 
 
