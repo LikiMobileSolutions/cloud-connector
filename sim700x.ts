@@ -37,17 +37,6 @@ namespace SIM700x {
 	}
 
 	/**
-			* (internal function)
-			*/
-	function _sendATCommandCheckACK(atCommand: string) {
-		let modemResponse = _SendATCommand(atCommand,-1)
-		while(modemResponse.includes("ERROR")){
-				modemResponse = _SendATCommand(atCommand,-1)
-				basic.pause(200)
-		}
-	}
-
-	/**
     	* Init module
     	*/
 	//% weight=100 blockId="SIM700Init"
