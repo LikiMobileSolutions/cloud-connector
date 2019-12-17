@@ -15,9 +15,9 @@ namespace SIM700x {
     	* (internal function)
     	*/
 	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=true): string {
-		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
-	    	serial.setWriteLinePadding(0)
-	    	serial.setRxBufferSize(128)
+		//serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
+	    	//serial.setWriteLinePadding(0)
+	    	//serial.setRxBufferSize(128)
 				if(useNewLine){
 					serial.writeLine(atCommand)
 				}else{
@@ -57,6 +57,10 @@ namespace SIM700x {
 		_SIM700RX_Pin=SIM700RX_Pin
 		_SIM700TX_Pin=SIM700TX_Pin
 		_SIM700BaudRate=SIM700BaudRate
+		
+		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
+		serial.setWriteLinePadding(0)
+		serial.setRxBufferSize(128)
 
 		let atResponse = _SendATCommand("AT")
 		let checks=0
@@ -181,7 +185,7 @@ namespace SIM700x {
 
 			_SendATCommand(cmd,100)
 			modemResponse=_SendATCommand(message,1000,false)
-		}*/
+		}
 
 
 
