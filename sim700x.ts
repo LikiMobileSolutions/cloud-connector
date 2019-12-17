@@ -57,7 +57,7 @@ namespace SIM700x {
 		_SIM700RX_Pin=SIM700RX_Pin
 		_SIM700TX_Pin=SIM700TX_Pin
 		_SIM700BaudRate=SIM700BaudRate
-		
+
 		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 		serial.setWriteLinePadding(0)
 		serial.setRxBufferSize(128)
@@ -175,8 +175,8 @@ namespace SIM700x {
 	export function MqttPublish(topic: string, message: string, qos=2, retain=0) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
-		serial.writeString(message)
-		/*
+		//serial.writeString(message)
+
 		let modemResponse=_SendATCommand(message,1000,false)
 
 		if(modemResponse.includes("ERROR")){
