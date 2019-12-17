@@ -165,7 +165,7 @@ namespace SIM700x {
 		_SendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
 		_SendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
 		if(! (_SendATCommandCheckACK("AT+SMCONN")) ){ //try to connect
-			_SendATCommand("AT+DISC") //try to disconnect first if connection failed
+			_SendATCommand("AT+SMDISC") //try to disconnect first if connection failed
 			_SendATCommandCheckACK("AT+SMCONN") //try to connect second time
 		}
 	}
