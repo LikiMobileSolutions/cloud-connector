@@ -202,7 +202,7 @@ namespace SIM700x {
 			if(modemResponse.includes("ERROR")){
 				let tries=0
 				while(modemResponse.includes("ERROR") && (!(tries>3)) ){
-					let modemNetState=_SendATCommand("AT+CNACT",-1)
+					let modemNetState=_SendATCommand("AT+CNACT?",-1)
 					if(modemNetState.includes("+CNACT: 1") ){
 						//network seem fine, try to reconnect mqtt
 						_SendATCommand("AT+SMDISC",-1)
