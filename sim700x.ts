@@ -47,7 +47,7 @@ namespace SIM700x {
 					return false
 				}
 				modemResponse = _SendATCommand(atCommand,-1)
-				basic.pause(50*tries) //adaptively extend pause during sending commands which fail
+				basic.pause(100*tries) //adaptively extend pause during sending commands which fail
 				tries++
 
 		}
