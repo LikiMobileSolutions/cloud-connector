@@ -133,12 +133,12 @@ namespace SIM700x {
 	*/
 	//% weight=100 blockId="getDateAndTime"
 	//% block="SIM700x getDateAndTime" group="3. GSM: "
-	export function getDateAndTime(phone_num: string, content: string): string {
+	export function getDateAndTime(): string {
 			_SendATCommand("AT+CLTS=1") // enable in case it's not enabled
 			let modemResponse=_SendATCommand('AT+CCLK?')
-			if(modemResponse.includes("+CCLK:")){
-				let dateTime=modemResponse.split()
-				return modemResponse
+			if(modemResponse.includes('+CCLK:')){
+				let dateTime=modemResponse.split('"')[1]
+				return dateTime
 			}
 			return "Err"
 
@@ -226,7 +226,7 @@ namespace SIM700x {
 
 		}
 
-		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp": '+timestamp+','+dataString+'} }'
+		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp":"'+timestamp+'"'+dataString+'} }'
 		MqttPublish("dev/data",liveObjectMsg)
 	}
 
