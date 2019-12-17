@@ -171,15 +171,17 @@ namespace SIM700x {
 	export function MqttPublish(topic: string, message: string, qos=2, retain=0) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
+		serial.writeString(message)
+		/*
 		let modemResponse=_SendATCommand(message,1000,false)
 
 		if(modemResponse.includes("ERROR")){
 			_SendATCommand("AT+SMDISC")
 			_SendATCommand("AT+SMCONN")
-			
+
 			_SendATCommand(cmd,100)
 			modemResponse=_SendATCommand(message,1000,false)
-		}
+		}*/
 
 
 
