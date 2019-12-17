@@ -218,15 +218,15 @@ namespace SIM700x {
 	* MQTT live object publish message
 	*/
 	//% weight=100 blockId="SIM700MqttLiveObjectPublish"
-	//% block="SIM700x Live object publish stream:%stream data:%data" group="4. Network:"
-	export function LiveObjectPublish(stream: string, data: string[]) {
+	//% block="SIM700x Live object publish stream:%stream, timestamp:%timestamp data:%data" group="4. Network:"
+	export function LiveObjectPublish(stream: string,timestamp: string, data: string[]) {
 		let dataString = ''
 		for(let i=0; i<data.length; i++){
 	    		dataString+=',"'+i+'":"'+data[i]+'"'
 
 		}
 
-		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp": "2100-01-01 09:00:00"'+dataString+'} }'
+		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp": '+timestamp+','+dataString+'} }'
 		MqttPublish("dev/data",liveObjectMsg)
 	}
 
