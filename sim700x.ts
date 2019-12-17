@@ -175,19 +175,20 @@ namespace SIM700x {
 	export function MqttPublish(topic: string, message: string, qos=2, retain=0) {
 		let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
 		_SendATCommand(cmd,100)
-		//serial.writeString(message)
+		let modemResponse=_SendATCommand(message,3000,false)
 
-		let modemResponse=_SendATCommand(message,1000,false)
+		let tries=0
+		while(modemResponse.includes("ERROR") && (!(tries>5)) ){
+			//try to reconnect mqtt
+			_SendATCommand("AT+SMDISC",-1)
+			_SendATCommand("AT+SMCONN",-1)
 
-		if(modemResponse.includes("ERROR")){
-			_SendATCommand("AT+SMDISC")
-			_SendATCommand("AT+SMCONN")
-
+			//retry
 			_SendATCommand(cmd,100)
-			modemResponse=_SendATCommand(message,1000,false)
+			modemResponse=_SendATCommand(message,5000,false)
+
+			tries++
 		}
-
-
 
 	}
 
