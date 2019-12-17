@@ -126,6 +126,24 @@ namespace SIM700x {
 			_SendATCommand(content + "\x1A")
 	}
 
+	/**
+	*get gurrent date and time as string
+	*format is "yy/MM/dd,hh:mm:ss±zz"
+	*example "10/05/06,00:01:52+08
+	*/
+	//% weight=100 blockId="getDateAndTime"
+	//% block="SIM700x getDateAndTime" group="3. GSM: "
+	export function getDateAndTime(phone_num: string, content: string): string {
+			_SendATCommand("AT+CLTS=1") // enable in case it's not enabled
+			let modemResponse=_SendATCommand('AT+CCLK?')
+			if(modemResponse.includes("+CCLK:")){
+				let dateTime=modemResponse.split()
+				return modemResponse
+			}
+			return "Err"
+
+	}
+
 
 	/**
 	* Network init
