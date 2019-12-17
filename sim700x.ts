@@ -9,7 +9,7 @@ namespace SIM700x {
 	let _SIM700RX_Pin=SerialPin.P0
 	let _SIM700BaudRate=BaudRate.BaudRate115200
 
-
+	let _Apn_name=""
 
 	/**
 	* (internal function)
@@ -151,7 +151,7 @@ namespace SIM700x {
 	//% weight=100 blockId="SIM700InitNetwork"
 	//% block="SIM700x network init: APNname:%ApnName" group="4. Network:"
 	export function InitNetwork(ApnName: string) {
-
+		_Apn_name = ApnName
 		let gsmStatus=getGSMRegistrationStatus()
 		while(!(gsmStatus==1 || gsmStatus==5)){
 			gsmStatus=getGSMRegistrationStatus()
@@ -199,18 +199,26 @@ namespace SIM700x {
 			_SendATCommand(cmd,100)
 			let modemResponse=_SendATCommand(message,3000,false)
 
-			let tries=0
-			while(modemResponse.includes("ERROR") && (!(tries>5)) ){
-				//try to reconnect mqtt
-				_SendATCommand("AT+SMDISC",-1)
-				_SendATCommand("AT+SMCONN",-1)
+			if(modemResponse.includes("ERROR")){
+				let tries=0
+				while(modemResponse.includes("ERROR") && (!(tries>3)) ){
+					let modemNetState=_SendATCommand("AT+CNACT",-1)
+					if(modemNetState.includes("+CNACT: 1") ){
+						//network seem fine, try to reconnect mqtt
+						_SendATCommand("AT+SMDISC",-1)
+						_SendATCommand("AT+SMCONN",-1)
+					}else{
+						//seem like a network problem, try to re-init
+						InitNetwork(_Apn_name)
+					}
+					//retry message publishing
+					_SendATCommand(cmd,100)
+					modemResponse=_SendATCommand(message,5000,false)
 
-				//retry
-				_SendATCommand(cmd,100)
-				modemResponse=_SendATCommand(message,5000,false)
-
-				tries++
+					tries++
+				}
 			}
+
 
 	}
 
