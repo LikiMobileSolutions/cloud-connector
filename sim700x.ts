@@ -39,12 +39,19 @@ namespace SIM700x {
 	/**
 			* (internal function)
 			*/
-	function _SendATCommandCheckACK(atCommand: string) {
+	function _SendATCommandCheckACK(atCommand: string, limit=5): boolean {
 		let modemResponse = _SendATCommand(atCommand,-1)
+		let tries=0
 		while(modemResponse.includes("ERROR")){
+				if(tries>limit){
+					return false
+				}
 				modemResponse = _SendATCommand(atCommand,-1)
-				basic.pause(200)
+				basic.pause(50*tries) //adaptively extend pause during sending commands which fail
+				tries++
+
 		}
+		return true
 	}
 
 	/**
@@ -163,7 +170,10 @@ namespace SIM700x {
 		_SendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
 		_SendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
 		_SendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
-		_SendATCommandCheckACK("AT+SMCONN")
+		if(! (_SendATCommandCheckACK("AT+SMCONN")) ){ //try to connect
+			_SendATCommand("AT+DISC") //try to disconnect first if connection failed
+			_SendATCommandCheckACK("AT+SMCONN") //try to connect second time
+		}
 	}
 
 	/**
