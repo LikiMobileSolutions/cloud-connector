@@ -214,7 +214,7 @@ namespace SIM700x {
 
 
 	/**
-	*
+	* log debug message using usb serial connection
 	*/
 	//% weight=100 blockId="SIM700USBSerialLog"
 	//% block="USBSerialLog %message"
@@ -222,6 +222,7 @@ namespace SIM700x {
 	export function USBSerialLog(message: string) {
 		serial.redirectToUSB()
 		serial.writeLine(message)
+		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
 	}
 
 	/**
