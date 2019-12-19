@@ -28,6 +28,14 @@ namespace SIM700x {
 				if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
 		  		return buffer
 				}
+
+
+				if(!buffer.isEmpty()){ //there something in buffer read one more time and return
+					basic.pause(10)
+					buffer += serial.readString()
+					return buffer
+				}
+
 			}
 		return buffer //timeout exceeded, anyway return buffer
 	}
@@ -36,9 +44,9 @@ namespace SIM700x {
 	* (internal function)
 	*/
 	function _SendATCommandCheckACK(atCommand: string, limit=5): boolean {
-			let modemResponse = _SendATCommand(atCommand,-1)
 			let tries=0
-			while(modemResponse.includes("ERROR")){
+			let modemResponse = _SendATCommand(atCommand,-1)
+			while(!modemResponse.includes("OK")){
 					if(tries>limit){
 						return false
 					}
