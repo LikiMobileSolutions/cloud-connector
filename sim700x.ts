@@ -248,6 +248,31 @@ namespace SIM700x {
 
 
 	/**
+	* GNSS init
+	*/
+	//% weight=100 blockId="SIM700InitGNSS"
+	//% block="SIM700x GNSS init" group="4. Network:"
+	export function InitGNSS() {
+		_SendATCommandCheckACK("AT+CGNSPWR=1")
+	}
+
+	/**
+	* GNSS get position
+	*/
+	//% weight=100 blockId="SIM700GNSSPosition"
+	//% block="SIM700x GNSS get position" group="4. Network:"
+	export function GNSSGetPosition(): string {
+		let modemResponse = _SendATCommand("AT+CGNSINF")
+		while(!modemResponse.includes("+CGNSINF: 1,1")){
+			sleep(500)
+			modemResponse = _SendATCommand("AT+CGNSINF")
+		}
+	  modemResponse = (modemResponse.split("+CGNSINF: ")[1]).split(",")
+		let position = modemResponse[3]+","+modemResponse[4]
+		return position
+	}
+
+	/**
 	* log debug message using usb serial connection
 	*/
 	//% weight=100 blockId="SIM700USBSerialLog"
@@ -274,10 +299,6 @@ namespace SIM700x {
 		}
 
 	}
-
-
-
-
 
 
 }
