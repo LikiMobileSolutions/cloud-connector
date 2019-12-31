@@ -194,12 +194,6 @@ namespace SIM700x {
 			_SendATCommand("AT+SMDISC") //try to disconnect first if connection failed
 			_SendATCommandCheckACK("AT+SMCONN") //try to connect second time
 		}
-
-		/*
-		if( ! (_SendATCommand("AT+SMCONN",10000).includes("OK")) ){ //try to connect
-			_SendATCommand("AT+SMDISC") //try to disconnect first if connection failed
-			_SendATCommandCheckACK("AT+SMCONN") //try to connect second time
-		}*/
 	}
 
 	/**
