@@ -262,13 +262,14 @@ namespace SIM700x {
 	//% weight=100 blockId="SIM700GNSSPosition"
 	//% block="SIM700x GNSS get position" group="4. Network:"
 	export function GNSSGetPosition(): string {
-		let modemResponse = _SendATCommand("AT+CGNSINF")
+		let modemResponse=_SendATCommand("AT+CGNSINF")
+		let position = ""
 		while(!modemResponse.includes("+CGNSINF: 1,1")){
-			sleep(500)
-			modemResponse = _SendATCommand("AT+CGNSINF")
+			basic.pause(500)
+			modemResponse=_SendATCommand("AT+CGNSINF")
 		}
-	  modemResponse = (modemResponse.split("+CGNSINF: ")[1]).split(",")
-		let position = modemResponse[3]+","+modemResponse[4]
+	  let tmp=modemResponse.split(",")
+		position = tmp[3]+","+tmp[4]
 		return position
 	}
 
