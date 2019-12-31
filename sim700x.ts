@@ -30,7 +30,7 @@ namespace SIM700x {
 				}
 
 
-				if(!buffer.isEmpty()){ //there something in buffer read one more time and return
+				if(!buffer.isEmpty()){ //there's something in buffer, wait, read one more time and return
 					basic.pause(100)
 					buffer += serial.readString()
 					return buffer
