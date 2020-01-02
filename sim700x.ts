@@ -248,20 +248,20 @@ namespace SIM700x {
 
 
 	/**
-	* GNSS init
+	* GPS init
 	*/
-	//% weight=100 blockId="SIM700InitGNSS"
-	//% block="SIM700x GNSS init" group="4. Network:"
-	export function InitGNSS() {
+	//% weight=100 blockId="SIM700InitGPS"
+	//% block="SIM700x GPS init" group="5. GPS:"
+	export function InitGPS() {
 		_SendATCommandCheckACK("AT+CGNSPWR=1")
 	}
 
 	/**
 	* GNSS get position
 	*/
-	//% weight=100 blockId="SIM700GNSSPosition"
-	//% block="SIM700x GNSS get position" group="4. Network:"
-	export function GNSSGetPosition(): string {
+	//% weight=100 blockId="SIM700GPSPosition"
+	//% block="SIM700x GPS get position" group="5. GPS:"
+	export function GPSGetPosition(): string {
 		let modemResponse=_SendATCommand("AT+CGNSINF")
 		let position = ""
 		while(!modemResponse.includes("+CGNSINF: 1,1")){
@@ -278,7 +278,7 @@ namespace SIM700x {
 	*/
 	//% weight=100 blockId="SIM700USBSerialLog"
 	//% block="USBSerialLog %message"
-	//% group="5. Low level  and debug functions:"
+	//% group="7. Low level  and debug functions:"
 	export function USBSerialLog(message: string) {
 		serial.redirectToUSB()
 		serial.writeLine(message)
@@ -291,7 +291,7 @@ namespace SIM700x {
 	//% weight=100 blockId="SendATCommand"
 	//% block="SIM700x SendATCommand %atCommand || timeout:%timeout"
 	//% timeout.defl=1000 expandableArgumentMode="toggle"
-	//% group="5. Low level  and debug functions:"
+	//% group="7. Low level  and debug functions:"
 	export function SendATCommand(atCommand: string, timeout?: number): string {
 		if(timeout){
 			return _SendATCommand(atCommand,timeout)
