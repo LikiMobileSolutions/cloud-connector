@@ -156,7 +156,7 @@ namespace SIM700x {
 	/**
 	* Network init
 	*/
-	//% weight=100 blockId="SIM700InitNetwork"
+	//% weight=100 blockId="SIM700MqttInit"
 	//% block="SIM700x MQTT init: APNname:%ApnName" group="4. Network:"
 	export function MqttInit(ApnName: string) {
 		_Apn_name = ApnName
@@ -217,7 +217,7 @@ namespace SIM700x {
 						_SendATCommand("AT+SMCONN",-1)
 					}else{
 						//seem like a network problem, try to re-init
-						InitNetwork(_Apn_name)
+						MqttInit(_Apn_name)
 					}
 					//retry message publishing
 					_SendATCommand(cmd,100)
@@ -248,8 +248,30 @@ namespace SIM700x {
 
 
 
+		/**
+		* Http init
+		*/
+		//% weight=100 blockId="SIM700InitHTTP"
+		//% block="SIM700x HTTP init apn:%apnName" group="4. Network:"
+		export function HttpInit(apnName: string) {
+			_SendATCommandCheckACK('AT+SAPBR=3,1,"APN","'+apnName+'"')
+			_SendATCommandCheckACK('AT+SAPBR=1,1')
+			_SendATCommandCheckACK('AT+SAPBR=2,1')
+			_SendATCommandCheckACK('AT+HTTPINIT')
+		}
 
-
+		/**
+		* Http post
+		*/
+		//% weight=100 blockId="SIM700HTTPPost"
+		//% block="SIM700x HTTP post url:%url data:%data" group="4. Network:"
+		export function HttpPost(url: string, data: string) {
+			_SendATCommandCheckACK('AT+HTTPPARA="URL","'+url+'"')
+			_SendATCommand("AT+HTTPDATA="+data.length+",1000")
+			basic.pause(100)
+			_SendATCommand(data,1000,false)
+			_SendATCommandCheckACK('AT+HTTPACTION=1')
+		}
 
 
 	/**
