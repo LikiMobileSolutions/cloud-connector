@@ -257,7 +257,10 @@ namespace SIM700x {
 			_SendATCommandCheckACK('AT+SAPBR=3,1,"APN","'+apnName+'"')
 			_SendATCommandCheckACK('AT+SAPBR=1,1')
 			_SendATCommandCheckACK('AT+SAPBR=2,1')
-			_SendATCommandCheckACK('AT+HTTPINIT')
+			if(! _SendATCommandCheckACK('AT+HTTPINIT') ){
+				_SendATCommandCheckACK('AT+HTTPTERM')
+				_SendATCommandCheckACK('AT+HTTPINIT')
+			}
 		}
 
 		/**
