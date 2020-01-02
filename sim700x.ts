@@ -247,6 +247,11 @@ namespace SIM700x {
 	}
 
 
+
+
+
+
+
 	/**
 	* GPS init
 	*/
