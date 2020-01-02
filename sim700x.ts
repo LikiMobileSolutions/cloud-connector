@@ -157,8 +157,8 @@ namespace SIM700x {
 	* Network init
 	*/
 	//% weight=100 blockId="SIM700InitNetwork"
-	//% block="SIM700x network init: APNname:%ApnName" group="4. Network:"
-	export function InitNetwork(ApnName: string) {
+	//% block="SIM700x MQTT init: APNname:%ApnName" group="4. Network:"
+	export function MqttInit(ApnName: string) {
 		_Apn_name = ApnName
 		let gsmStatus=getGSMRegistrationStatus()
 		while(!(gsmStatus==1 || gsmStatus==5)){
@@ -181,11 +181,11 @@ namespace SIM700x {
 	}
 
 	/**
-	* MQTT init
+	* MQTT connect
 	*/
 	//% weight=100 blockId="SIM700InitMQTT"
-	//% block="SIM700x MQTT init BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. Network:"
-	export function InitMQTT(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
+	//% block="SIM700x MQTT connect BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. Network:"
+	export function MqttConnect(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
 		_SendATCommandCheckACK('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
 		_SendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
 		_SendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
@@ -278,7 +278,7 @@ namespace SIM700x {
 	*/
 	//% weight=100 blockId="SIM700USBSerialLog"
 	//% block="USBSerialLog %message"
-	//% group="7. Low level  and debug functions:"
+	//% group="6. Low level  and debug functions:"
 	export function USBSerialLog(message: string) {
 		serial.redirectToUSB()
 		serial.writeLine(message)
@@ -291,7 +291,7 @@ namespace SIM700x {
 	//% weight=100 blockId="SendATCommand"
 	//% block="SIM700x SendATCommand %atCommand || timeout:%timeout"
 	//% timeout.defl=1000 expandableArgumentMode="toggle"
-	//% group="7. Low level  and debug functions:"
+	//% group="6. Low level  and debug functions:"
 	export function SendATCommand(atCommand: string, timeout?: number): string {
 		if(timeout){
 			return _SendATCommand(atCommand,timeout)
