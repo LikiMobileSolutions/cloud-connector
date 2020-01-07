@@ -157,7 +157,7 @@ namespace SIM700x {
 	* Network init
 	*/
 	//% weight=100 blockId="SIM700MqttInit"
-	//% block="SIM700x MQTT init: APNname:%ApnName" group="4. Network:"
+	//% block="SIM700x MQTT init: APNname:%ApnName" group="4. MQTT:"
 	export function MqttInit(ApnName: string) {
 		_Apn_name = ApnName
 		let gsmStatus=getGSMRegistrationStatus()
@@ -184,7 +184,7 @@ namespace SIM700x {
 	* MQTT connect
 	*/
 	//% weight=100 blockId="SIM700InitMQTT"
-	//% block="SIM700x MQTT connect BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. Network:"
+	//% block="SIM700x MQTT connect BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. MQTT:"
 	export function MqttConnect(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
 		_SendATCommandCheckACK('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
 		_SendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
@@ -200,7 +200,7 @@ namespace SIM700x {
 	* MQTT publish message
 	*/
 	//% weight=100 blockId="SIM700MqttPublish"
-	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message || qos:%qos retain:%retain" group="4. Network:"
+	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message || qos:%qos retain:%retain" group="4. MQTT:"
 	//% qos.defl=0 retain.defl=0 expandableArgumentMode="toggle"
 	export function MqttPublish(topic: string, message: string, qos=2, retain=0) {
 			let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
@@ -234,7 +234,7 @@ namespace SIM700x {
 	* MQTT live object publish message
 	*/
 	//% weight=100 blockId="SIM700MqttLiveObjectPublish"
-	//% block="SIM700x Live object publish stream:%stream, timestamp:%timestamp data:%data" group="4. Network:"
+	//% block="SIM700x Live object publish stream:%stream, timestamp:%timestamp data:%data" group="4. MQTT:"
 	export function LiveObjectPublish(stream: string,timestamp: string, data: string[]) {
 		let dataString = ''
 		for(let i=0; i<data.length; i++){
@@ -252,7 +252,7 @@ namespace SIM700x {
 		* Http init
 		*/
 		//% weight=100 blockId="SIM700InitHTTP"
-		//% block="SIM700x HTTP init apn:%apnName" group="4. Network:"
+		//% block="SIM700x HTTP init apn:%apnName" group="5. HTTP:"
 		export function HttpInit(apnName: string) {
 			_SendATCommandCheckACK('AT+SAPBR=3,1,"APN","'+apnName+'"')
 			_SendATCommandCheckACK('AT+SAPBR=1,1')
@@ -267,7 +267,7 @@ namespace SIM700x {
 		* Http post
 		*/
 		//% weight=100 blockId="SIM700HTTPPost"
-		//% block="SIM700x HTTP post url:%url data:%data" group="4. Network:"
+		//% block="SIM700x HTTP post url:%url data:%data" group="5. Network:"
 		export function HttpPost(url: string, data: string) {
 			_SendATCommandCheckACK('AT+HTTPPARA="URL","'+url+'"')
 			_SendATCommand("AT+HTTPDATA="+data.length+",1000")
