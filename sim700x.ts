@@ -290,7 +290,7 @@ namespace SIM700x {
 		* Http post
 		*/
 		//% weight=100 blockId="SIM700HTTPPost"
-		//% block="SIM700x HTTP post url:%url data:%data" group="5. Network:"
+		//% block="SIM700x HTTP post url:%url data:%data" group="5. HTTP:"
 		export function HttpPost(url: string, data: string) {
 			_SendATCommandCheckACK('AT+HTTPPARA="URL","'+url+'"')
 			_SendATCommand("AT+HTTPDATA="+data.length+",1000")
