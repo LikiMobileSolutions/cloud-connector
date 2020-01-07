@@ -105,6 +105,29 @@ namespace SIM700x {
 			return signalStrengthLevel
 	}
 
+	/**
+	* Display signal strength on led matrix
+	*/
+	//% weight=100 blockId="displaySignalQuality"
+	//% block="SIM700x DispalySignalQuality" group="2. Status: "
+	export function displaySignalQuality() {
+		let signalQuality = getSignalQuality()
+		if (signalQuality == 1) {
+				basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. . . . .\n# . . . .`)
+		}
+		if (signalQuality == 2) {
+				basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. # . . .\n# # . . .`)
+		}
+		if (signalQuality == 3) {
+				basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
+		}
+		if (signalQuality == 4) {
+				basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
+		}
+		if (signalQuality == 5) {
+				basic.showLeds(`. . . . #\n. . . # #\n. . # # #\n. # # # #\n# # # # #`)
+		}
+	}
 
 	/**
 	* return gsm network registration status as code, 1 or 5 mean sucessfull registartion
