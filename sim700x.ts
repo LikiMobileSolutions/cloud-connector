@@ -87,7 +87,7 @@ namespace SIM700x {
 
 	/**
 	* get signal strength,
-	* return in 0-4 range
+	* return in 1-5 range
 	* return -1 if something is wrong and signal can't be fetched
 	*/
 	//% weight=100 blockId="getSignalQuality"
@@ -99,7 +99,7 @@ namespace SIM700x {
 				signalStrengthRaw = signalStrengthRaw.split(": ")[1]
 				signalStrengthRaw = signalStrengthRaw.split(",")[0]
 				if(parseInt(signalStrengthRaw) != 99){ // 99 means that signal can't be fetched
-					signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 0, 4))
+					signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 1, 5))
 				}
 			}
 			return signalStrengthLevel
