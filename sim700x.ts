@@ -28,14 +28,6 @@ namespace SIM700x {
 				if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
 		  		return buffer
 				}
-
-
-				if(!buffer.isEmpty()){ //there's something in buffer, wait, read one more time and return
-					basic.pause(100)
-					buffer += serial.readString()
-					return buffer
-				}
-
 			}
 		return buffer //timeout exceeded, anyway return buffer
 	}
