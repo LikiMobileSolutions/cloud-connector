@@ -17,7 +17,7 @@ namespace SIM700x {
 	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=true): string {
 
 			if(useNewLine){
-				serial.write(atCommand)
+				serial.writeLine(atCommand)
 			}else{
 				serial.writeString(atCommand)
 			}
