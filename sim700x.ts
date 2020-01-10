@@ -8,7 +8,7 @@ namespace SIM700x {
 	let _SIM700TX_Pin=SerialPin.P1
 	let _SIM700RX_Pin=SerialPin.P0
 	let _SIM700BaudRate=BaudRate.BaudRate115200
-
+	let usbLogging = true
 	let _Apn_name=""
 
 	/**
@@ -35,10 +35,13 @@ namespace SIM700x {
 			while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
 				buffer += serial.readString()
 				if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
-		  		return buffer
+		  		break
 				}
 			}
-		return buffer //timeout exceeded, anyway return buffer
+		if(usbLogging){
+			USBSerialLog("command:"+atCommand+" response:"+buffer)
+		}
+		return buffer
 	}
 
 	/**
