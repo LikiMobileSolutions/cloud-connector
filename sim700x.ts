@@ -81,7 +81,7 @@ namespace SIM700x {
 			while(!atResponse.includes("OK")){ //check in loop if echo is enabled
 				atResponse = _SendATCommand("AT",1000)
 			}
-			_SendATCommand("ATE 0") // disable echo
+			_SendATCommand("ATE 1") // enable echo
 	}
 
 	/**
