@@ -39,7 +39,7 @@ namespace SIM700x {
 				}
 			}
 		if(usbLogging){
-			USBSerialLog("Command:"+atCommand+"\r\n Response:"+buffer)
+			USBSerialLog("Command:"+atCommand+"\r\nResponse:"+buffer)
 		}
 		return buffer
 	}
