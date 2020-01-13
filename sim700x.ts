@@ -220,6 +220,8 @@ namespace SIM700x {
 			let cmd='AT+SMPUB="'+topic+'",' + (message.length) + ','+qos+','+retain
 			_SendATCommand(cmd,100)
 			basic.pause(500)
+			serial.writeString(message)
+			/*
 			let modemResponse=_SendATCommand(message,3000,false)
 
 			let tries=0
@@ -241,7 +243,7 @@ namespace SIM700x {
 				modemResponse=_SendATCommand(message,5000,false)
 
 				tries++
-			}
+			}*/
 
 	}
 
