@@ -231,7 +231,7 @@ namespace SIM700x {
 			let modemResponse=_SendATCommand(message,3000,false)
 
 			let tries=0
-			while((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries>3)) ){
+			while((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries>6)) ){
 				let modemNetState=_SendATCommand("AT+CNACT?",-1)
 				let mqttConnectionState=_SendATCommand("AT+SMSTATE?",-1)
 				if(modemNetState.includes("+CNACT: 0") ){
@@ -241,7 +241,7 @@ namespace SIM700x {
 				}
 				if(mqttConnectionState.includes("+SMSTATE: 0")){
 					//seem like mqtt disconnection,try to reconnect
-					_SendATCommandCheckACK("AT+SMDISC")
+					_SendATCommand("AT+SMDISC")
 					_SendATCommandCheckACK("AT+SMCONN")
 				}
 				//retry message publishing
