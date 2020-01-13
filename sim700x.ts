@@ -240,6 +240,7 @@ namespace SIM700x {
 				}
 				if(mqttConnectionState.includes("+SMSTATE: 0")){
 					//seem like mqtt disconnection,try to reconnect
+					_SendATCommandCheckACK("AT+SMDISC")
 					_SendATCommandCheckACK("AT+SMCONN")
 				}
 				//retry message publishing
