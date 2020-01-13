@@ -15,20 +15,19 @@ namespace SIM700x {
 	* (internal function)
 	*/
 	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=true): string {
-			/*
 			if(useNewLine){
 				serial.writeLine(atCommand)
 			}else{
 				serial.writeString(atCommand)
-			}*/
+			}
 
-			for (let i = 0; i < atCommand.length; i++) {
+			/* for (let i = 0; i < atCommand.length; i++) {
 				serial.writeString(atCommand[i])
 				basic.pause(0.5)
 			}
 			if(useNewLine){
 				serial.writeString("\r\n")
-			}
+			}*/
 
 			let startTs = input.runningTime()
 			let buffer = ""
