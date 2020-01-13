@@ -8,7 +8,7 @@ namespace SIM700x {
 	let _SIM700TX_Pin=SerialPin.P1
 	let _SIM700RX_Pin=SerialPin.P0
 	let _SIM700BaudRate=BaudRate.BaudRate115200
-	let usbLogging = true
+	let usbLogging = false
 	let _Apn_name=""
 
 	/**
