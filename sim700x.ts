@@ -21,14 +21,6 @@ namespace SIM700x {
 				serial.writeString(atCommand)
 			}
 
-			/* for (let i = 0; i < atCommand.length; i++) {
-				serial.writeString(atCommand[i])
-				basic.pause(0.5)
-			}
-			if(useNewLine){
-				serial.writeString("\r\n")
-			}*/
-
 			let startTs = input.runningTime()
 			let buffer = ""
 			while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
@@ -225,9 +217,9 @@ namespace SIM700x {
 	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message || qos:%qos retain:%retain" group="4. MQTT:"
 	//% qos.defl=0 retain.defl=0 expandableArgumentMode="toggle"
 	export function MqttPublish(topic: string, message: string, qos=0, retain=0) {
-			let cmd='AT+SMPUB="'+topic+'",' + message.length + ','+qos+','+retain
+			let cmd='AT+SMPUB="'+topic+'",' + (message.length) + ','+qos+','+retain
 			_SendATCommand(cmd,100)
-			basic.pause(100)
+			basic.pause(500)
 			let modemResponse=_SendATCommand(message,3000,false)
 
 			let tries=0
