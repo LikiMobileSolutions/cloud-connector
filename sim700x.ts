@@ -78,15 +78,10 @@ namespace SIM700x {
 			serial.setRxBufferSize(128)
 
 			let atResponse = _SendATCommand("AT")
-			let checks=0
 			while(!atResponse.includes("OK")){ //check in loop if echo is enabled
-				_SendATCommand("ATE 0")
 				atResponse = _SendATCommand("AT",1000)
-				if(checks>=10){
-					break;
-				}
-				checks++
 			}
+			_SendATCommand("ATE 0") // disable echo
 	}
 
 	/**
