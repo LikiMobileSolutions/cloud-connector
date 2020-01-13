@@ -82,6 +82,7 @@ namespace SIM700x {
 				atResponse = _SendATCommand("AT",1000)
 			}
 			_SendATCommand("ATE 1") // enable echo
+			_SendATCommand("AT+CMEE=2") // extend error logging
 	}
 
 	/**
