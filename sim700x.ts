@@ -14,7 +14,7 @@ namespace SIM700x {
 	/**
 	* (internal function)
 	*/
-	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=true): string {
+	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=true, additionalWaitTime=1000): string {
 			if(useNewLine){
 				serial.writeLine(atCommand)
 			}else{
@@ -204,7 +204,6 @@ namespace SIM700x {
 		_SendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
 		_SendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
 		_SendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
-		_SendATCommandCheckACK('AT+SMCONF="CLEANSS",1')
 		if(! _SendATCommandCheckACK("AT+SMCONN",2)){
 			_SendATCommand("AT+SMDISC") //try to disconnect first if connection failed
 			_SendATCommandCheckACK("AT+SMCONN") //try to connect second time
@@ -216,8 +215,8 @@ namespace SIM700x {
 	*/
 	//% weight=100 blockId="SIM700MqttPublish"
 	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message || qos:%qos retain:%retain" group="4. MQTT:"
-	//% qos.defl=0 retain.defl=0 expandableArgumentMode="toggle"
-	export function MqttPublish(topic: string, message: string, qos=0, retain=0) {
+	//% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
+	export function MqttPublish(topic: string, message: string, qos=1, retain=0) {
 			let cmd='AT+SMPUB="'+topic+'",' + (message.length) + ','+qos+','+retain
 			_SendATCommand(cmd,100)
 			basic.pause(100)
