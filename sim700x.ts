@@ -214,7 +214,7 @@ namespace SIM700x {
 	* MQTT publish message
 	*/
 	//% weight=100 blockId="SIM700MqttPublish"
-	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message || qos:%qos retain:%retain" group="4. MQTT:"
+	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message||qos:%qos retain:%retain" group="4. MQTT:"
 	//% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
 	export function MqttPublish(topic: string, message: string, qos=1, retain=0) {
 			let cmd='AT+SMPUB="'+topic+'",' + (message.length) + ','+qos+','+retain
@@ -245,6 +245,23 @@ namespace SIM700x {
 			}
 
 	}
+
+	/**
+	* MQTT subscribe
+	*/
+	//% weight=100 blockId="SIM700SubscribeMQTT"
+	//% block="SIM700x MQTT subscribe topic:%topic" group="4. MQTT:"
+	export function MqttSubscribe(topic: string, handler: () => void) {
+		_SendATCommand('AT+SMSUB="'+topic+'",1')
+		serial.onDataReceived(serial.delimiters(Delimiters.Colon), function () {
+			let data = serial.readLine
+			if(data.includes(topic)){
+				handler()
+			}
+		})
+
+	}
+
 
 	/**
 	* MQTT live object publish message
