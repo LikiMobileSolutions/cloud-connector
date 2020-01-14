@@ -10,8 +10,6 @@ namespace SIM700x {
 	let _SIM700BaudRate=BaudRate.BaudRate115200
 	let usbLogging = false
 	let _Apn_name=""
-	let mqttSubscribeHandler=function(topic: string){}
-	let mqttSubscribeTopics: string[] = []
 
 	/**
 	* (internal function)
@@ -169,8 +167,14 @@ namespace SIM700x {
 	}
 
 
+
+	//MQTT
+	//global mqtt variables below
+	let mqttSubscribeHandler=function(topic: string){}
+	let mqttSubscribeTopics: string[] = []
+
 	/**
-	* Network init
+	* Mqtt init
 	*/
 	//% weight=100 blockId="SIM700MqttInit"
 	//% block="SIM700x MQTT init: APNname:%ApnName" group="4. MQTT:"
@@ -273,7 +277,7 @@ namespace SIM700x {
 	* MQTT on subscription receive
 	*/
 	//% weight=100 blockId="SIM700SubsMsgReceivedMQTT"
-	//% block="SIM700x MQTT on subscribed message received" group="4. MQTT:"
+	//% block="SIM700x MQTT on subscribtion received" group="4. MQTT:"
 	//% draggableParameters
 	export function MqttMessageReceived(handler: (topic: string) => void) {
 		mqttSubscribeHandler = handler
