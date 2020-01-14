@@ -11,6 +11,7 @@ namespace SIM700x {
 	let usbLogging = false
 	let _Apn_name=""
 	let mqttSubscribeHandler=function(topic: string){}
+	let mqttSubscribeTopics: string[] = []
 
 	/**
 	* (internal function)
@@ -254,12 +255,16 @@ namespace SIM700x {
 	//% block="SIM700x MQTT subscribe topic:%topic" group="4. MQTT:"
 	export function MqttSubscribe(topic: string) {
 		_SendATCommand('AT+SMSUB="'+topic+'",1')
+		mqttSubscribeTopics.push(topic)
+
+		//attach listener
 		serial.onDataReceived(serial.delimiters(Delimiters.Colon), function () {
 			let data = serial.readLine()
-			if(data.includes(topic)){
-				mqttSubscribeHandler(topic)
+			for(let i=0; i<mqttSubscribeTopics.length; i++){
+				if(data.includes(mqttSubscribeTopics[i])){
+					mqttSubscribeHandler(mqttSubscribeTopics[i])
+				}
 			}
-
 		})
 	}
 
