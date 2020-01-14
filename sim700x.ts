@@ -170,7 +170,7 @@ namespace SIM700x {
 
 	//MQTT
 	//global mqtt variables below
-	let mqttSubscribeHandler=function(topic: string){}
+	let mqttSubscribeHandler=function(topic: string, message: string){}
 	let mqttSubscribeTopics: string[] = []
 
 	/**
@@ -266,7 +266,8 @@ namespace SIM700x {
 			let data = serial.readLine()
 			for(let i=0; i<mqttSubscribeTopics.length; i++){
 				if(data.includes(mqttSubscribeTopics[i])){
-					mqttSubscribeHandler(mqttSubscribeTopics[i])
+					let message = (data.split('","')[1]) // extract message from AT Response
+					mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-2))
 				}
 			}
 		})
@@ -279,7 +280,7 @@ namespace SIM700x {
 	//% weight=100 blockId="SIM700SubsMsgReceivedMQTT"
 	//% block="SIM700x MQTT on subscribtion received" group="4. MQTT:"
 	//% draggableParameters
-	export function MqttMessageReceived(handler: (topic: string) => void) {
+	export function MqttMessageReceived(handler: (topic: string, message: string) => void) {
 		mqttSubscribeHandler = handler
 	}
 
