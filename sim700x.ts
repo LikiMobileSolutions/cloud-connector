@@ -262,12 +262,16 @@ namespace SIM700x {
 		mqttSubscribeTopics.push(topic)
 
 		//attach listener
-		serial.onDataReceived(serial.delimiters(Delimiters.Colon), function () {
-			let data = serial.readLine()
-			for(let i=0; i<mqttSubscribeTopics.length; i++){
-				if(data.includes(mqttSubscribeTopics[i])){
-					let message = (data.split('","')[1]) // extract message from AT Response
-					mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-2))
+		serial.onDataReceived("+", function () {
+			basic.pause(50)
+			let dataRaw = serial.readString()
+			let data = dataRaw.substr(dataRaw.indexOf("+"),dataRaw.length)
+			if(data.includes("SMSUB:")){
+				for(let i=0; i<mqttSubscribeTopics.length; i++){
+					if(data.includes(mqttSubscribeTopics[i])){
+						let message = (data.split('","')[1]) // extract message from AT Response
+						mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
+					}
 				}
 			}
 		})
