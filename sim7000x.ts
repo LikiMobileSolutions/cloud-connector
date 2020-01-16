@@ -5,16 +5,18 @@
 //% color=#5042f4 icon="\uf093"
 namespace sim7000x {
 
-	let _sim7000TX_Pin=SerialPin.P1
-	let _sim7000RX_Pin=SerialPin.P0
-	let _sim7000BaudRate=BaudRate.BaudRate115200
+	let sim7000TXPin=SerialPin.P1
+	let sim7000RXPin=SerialPin.P0
+	let sim7000BaudRate=BaudRate.BaudRate115200
+
+	let apnName=""
+
 	let usbLogging = false
-	let _Apn_name=""
 
 	/**
 	* (internal function)
 	*/
-	function _SendATCommand(atCommand: string, timeout=1000, useNewLine=true, additionalWaitTime=1000): string {
+	function sendATCommand(atCommand: string, timeout=1000, useNewLine=true, additionalWaitTime=1000): string {
 			if(useNewLine){
 				serial.writeLine(atCommand)
 			}else{
@@ -38,14 +40,14 @@ namespace sim7000x {
 	/**
 	* (internal function)
 	*/
-	function _SendATCommandCheckACK(atCommand: string, limit=5): boolean {
+	function sendATCommandCheckACK(atCommand: string, limit=5): boolean {
 			let tries=0
-			let modemResponse = _SendATCommand(atCommand,-1)
+			let modemResponse = sendATCommand(atCommand,-1)
 			while(!modemResponse.includes("OK")){
 					if(tries>limit){
 						return false
 					}
-					modemResponse = _SendATCommand(atCommand,-1)
+					modemResponse = sendATCommand(atCommand,-1)
 					basic.pause(100*tries) //adaptively extend pause during sending commands which fail
 					tries++
 
@@ -59,21 +61,21 @@ namespace sim7000x {
 	//% weight=100 blockId="sim7000Init"
 	//% block="sim7000x Init RX: %sim7000RX_Pin TX: %sim7000TX_Pin Baud:%sim7000BaudRate"
 	//% sim7000TX_Pin.defl=SerialPin.P1 sim7000RX_Pin.defl=SerialPin.P0 sim7000BaudRate.defl=BaudRate.BaudRate115200 group="1. Setup: "
-	export function Init(sim7000TX_Pin: SerialPin, sim7000RX_Pin: SerialPin, sim7000BaudRate: BaudRate) {
-			_sim7000RX_Pin=sim7000RX_Pin
-			_sim7000TX_Pin=sim7000TX_Pin
-			_sim7000BaudRate=sim7000BaudRate
+	export function init(sim7000TX_Pin: SerialPin, sim7000RX_Pin: SerialPin, sim7000BaudRate: BaudRate) {
+			sim7000RXPin=sim7000RX_Pin
+			sim7000TXPin=sim7000TX_Pin
+			sim7000BaudRate=sim7000BaudRate
 
-			serial.redirect(_sim7000RX_Pin, _sim7000TX_Pin, _sim7000BaudRate)
+			serial.redirect(sim7000RXPin, sim7000TXPin, sim7000BaudRate)
 			serial.setWriteLinePadding(0)
 			serial.setRxBufferSize(128)
 
-			let atResponse = _SendATCommand("AT")
+			let atResponse = sendATCommand("AT")
 			while(!atResponse.includes("OK")){ //check in loop if echo is enabled
-				atResponse = _SendATCommand("AT",1000)
+				atResponse = sendATCommand("AT",1000)
 			}
-			_SendATCommand("ATE 0") // disable echo
-			_SendATCommand("AT+CMEE=2") // extend error logging
+			sendATCommand("ATE 0") // disable echo
+			sendATCommand("AT+CMEE=2") // extend error logging
 	}
 
 	/**
@@ -82,9 +84,9 @@ namespace sim7000x {
 	* return -1 if something is wrong and signal can't be fetched
 	*/
 	//% weight=100 blockId="getSignalQuality"
-	//% block="sim7000x GetSignalQuality" group="2. Status: "
+	//% block="sim7000x Signal quality" group="2. Status: "
 	export function getSignalQuality(): number {
-			let signalStrengthRaw = _SendATCommand("AT+CSQ")
+			let signalStrengthRaw = sendATCommand("AT+CSQ")
 			let signalStrengthLevel = -1
 			if (signalStrengthRaw.includes("+CSQ:")) {
 				signalStrengthRaw = signalStrengthRaw.split(": ")[1]
@@ -100,7 +102,7 @@ namespace sim7000x {
 	* Display signal strength on led matrix
 	*/
 	//% weight=100 blockId="displaySignalQuality"
-	//% block="sim7000x DispalySignalQuality" group="2. Status: "
+	//% block="sim7000x Dispaly signal quality" group="2. Status: "
 	export function displaySignalQuality() {
 		let signalQuality = getSignalQuality()
 		if (signalQuality == 1) {
@@ -124,9 +126,9 @@ namespace sim7000x {
 	* return gsm network registration status as code, 1 or 5 mean sucessfull registartion
 	*/
 	//% weight=100 blockId="getGSMRegistrationStatus"
-	//% block="sim7000x GetGSMRegistrationStatus" group="2. Status: "
+	//% block="sim7000x Get GSM registration status" group="2. Status: "
 	export function getGSMRegistrationStatus(): number {
-			let response = _SendATCommand("AT+CREG?")
+			let response = sendATCommand("AT+CREG?")
 			let registrationStatusCode = -1;
 			if (response.includes("+CREG:")) {
 				response = response.split(",")[1]
@@ -141,11 +143,11 @@ namespace sim7000x {
 	*  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
 	*/
 	//% weight=100 blockId="sendSmsMessage"
-	//% block="sim7000x sendSmsMessage to: %phone_num, content: %content " group="3. GSM: "
+	//% block="sim7000x Send SMS message to: %phone_num, content: %content " group="3. GSM: "
 	export function sendSmsMessage(phone_num: string, content: string) {
-			_SendATCommand("AT+CMGF=1") // set text mode
-			_SendATCommand('AT+CMGS="' + phone_num + '"')
-			_SendATCommand(content + "\x1A")
+			sendATCommand("AT+CMGF=1") // set text mode
+			sendATCommand('AT+CMGS="' + phone_num + '"')
+			sendATCommand(content + "\x1A")
 	}
 
 	/**
@@ -154,10 +156,10 @@ namespace sim7000x {
 	*example "10/05/06,00:01:52+08
 	*/
 	//% weight=100 blockId="getDateAndTime"
-	//% block="sim7000x getDateAndTime" group="3. GSM: "
+	//% block="sim7000x get Date And Time" group="3. GSM: "
 	export function getDateAndTime(): string {
-			_SendATCommand("AT+CLTS=1") // enable in case it's not enabled
-			let modemResponse=_SendATCommand('AT+CCLK?')
+			sendATCommand("AT+CLTS=1") // enable in case it's not enabled
+			let modemResponse=sendATCommand('AT+CCLK?')
 			if(modemResponse.includes('+CCLK:')){
 				let dateTime=modemResponse.split('"')[1]
 				return dateTime
@@ -169,7 +171,7 @@ namespace sim7000x {
 
 
 	//MQTT
-	//global mqtt variables below
+	//global mqtt variables
 	let mqttSubscribeHandler=function(topic: string, message: string){}
 	let mqttSubscribeTopics: string[] = []
 
@@ -179,23 +181,23 @@ namespace sim7000x {
 	//% weight=100 blockId="sim7000MqttInit"
 	//% block="sim7000x MQTT init: APNname:%ApnName" group="4. MQTT:"
 	export function MqttInit(ApnName: string) {
-		_Apn_name = ApnName
+		apnName = ApnName
 		let gsmStatus=getGSMRegistrationStatus()
 		while(!(gsmStatus==1 || gsmStatus==5)){
 			gsmStatus=getGSMRegistrationStatus()
 			basic.pause(500)
 		}
-		_SendATCommand('AT+CNACT=1,"'+ApnName+'"')
+		sendATCommand('AT+CNACT=1,"'+ApnName+'"')
 		basic.pause(1000)
-		let netStatus=_SendATCommand('AT+CNACT?')
+		let netStatus=sendATCommand('AT+CNACT?')
 		let tries = 0
 		while(!netStatus.includes("+CNACT: 1")){
 			if(tries>=8){
-				_SendATCommand('AT+CNACT=1,"'+ApnName+'"')
+				sendATCommand('AT+CNACT=1,"'+ApnName+'"')
 				tries=0
 			}
 			basic.pause(1000)
-			netStatus=_SendATCommand('AT+CNACT?')
+			netStatus=sendATCommand('AT+CNACT?')
 			tries++
 		}
 	}
@@ -206,13 +208,13 @@ namespace sim7000x {
 	//% weight=100 blockId="sim7000InitMQTT"
 	//% block="sim7000x MQTT connect BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. MQTT:"
 	export function MqttConnect(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
-		_SendATCommandCheckACK('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
-		_SendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
-		_SendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
-		_SendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
-		if(! _SendATCommandCheckACK("AT+SMCONN",2)){
-			_SendATCommand("AT+SMDISC") //try to disconnect first if connection failed
-			_SendATCommandCheckACK("AT+SMCONN") //try to connect second time
+		sendATCommandCheckACK('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
+		sendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
+		sendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
+		sendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
+		if(! sendATCommandCheckACK("AT+SMCONN",2)){
+			sendATCommand("AT+SMDISC") //try to disconnect first if connection failed
+			sendATCommandCheckACK("AT+SMCONN") //try to connect second time
 		}
 	}
 
@@ -224,28 +226,28 @@ namespace sim7000x {
 	//% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
 	export function MqttPublish(topic: string, message: string, qos=1, retain=0) {
 			let cmd='AT+SMPUB="'+topic+'",' + (message.length) + ','+qos+','+retain
-			_SendATCommand(cmd,100)
+			sendATCommand(cmd,100)
 			basic.pause(100)
 
-			let modemResponse=_SendATCommand(message,3000,false)
+			let modemResponse=sendATCommand(message,3000,false)
 
 			let tries=0
 			while((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries>6)) ){
-				let modemNetState=_SendATCommand("AT+CNACT?",-1)
-				let mqttConnectionState=_SendATCommand("AT+SMSTATE?",-1)
+				let modemNetState=sendATCommand("AT+CNACT?",-1)
+				let mqttConnectionState=sendATCommand("AT+SMSTATE?",-1)
 				if(modemNetState.includes("+CNACT: 0") ){
 					//network seem disconnected, try to reinit
-					MqttInit(_Apn_name)
-					_SendATCommandCheckACK("AT+SMCONN")
+					MqttInit(apnName)
+					sendATCommandCheckACK("AT+SMCONN")
 				}
 				if(mqttConnectionState.includes("+SMSTATE: 0")){
 					//seem like mqtt disconnection,try to reconnect
-					_SendATCommand("AT+SMDISC")
-					_SendATCommandCheckACK("AT+SMCONN")
+					sendATCommand("AT+SMDISC")
+					sendATCommandCheckACK("AT+SMCONN")
 				}
 				//retry message publishing
-				_SendATCommand(cmd,100)
-				modemResponse=_SendATCommand(message,5000,false)
+				sendATCommand(cmd,100)
+				modemResponse=sendATCommand(message,5000,false)
 
 				tries++
 			}
@@ -258,7 +260,7 @@ namespace sim7000x {
 	//% weight=100 blockId="sim7000SubscribeMQTT"
 	//% block="sim7000x MQTT subscribe topic:%topic" group="4. MQTT:"
 	export function MqttSubscribe(topic: string) {
-		_SendATCommand('AT+SMSUB="'+topic+'",1')
+		sendATCommand('AT+SMSUB="'+topic+'",1')
 		mqttSubscribeTopics.push(topic)
 
 		//attach listener
@@ -312,13 +314,13 @@ namespace sim7000x {
 		*/
 		//% weight=100 blockId="sim7000InitHTTP"
 		//% block="sim7000x HTTP init apn:%apnName" group="5. HTTP:"
-		export function HttpInit(apnName: string) {
-			_SendATCommandCheckACK('AT+SAPBR=3,1,"APN","'+apnName+'"')
-			_SendATCommandCheckACK('AT+SAPBR=1,1')
-			_SendATCommandCheckACK('AT+SAPBR=2,1')
-			if(! _SendATCommandCheckACK('AT+HTTPINIT') ){
-				_SendATCommandCheckACK('AT+HTTPTERM')
-				_SendATCommandCheckACK('AT+HTTPINIT')
+		export function HttpInit(ApnName: string) {
+			sendATCommandCheckACK('AT+SAPBR=3,1,"APN","'+ApnName+'"')
+			sendATCommandCheckACK('AT+SAPBR=1,1')
+			sendATCommandCheckACK('AT+SAPBR=2,1')
+			if(! sendATCommandCheckACK('AT+HTTPINIT') ){
+				sendATCommandCheckACK('AT+HTTPTERM')
+				sendATCommandCheckACK('AT+HTTPINIT')
 			}
 		}
 
@@ -328,11 +330,11 @@ namespace sim7000x {
 		//% weight=100 blockId="sim7000HTTPPost"
 		//% block="sim7000x HTTP post url:%url data:%data" group="5. HTTP:"
 		export function HttpPost(url: string, data: string) {
-			_SendATCommandCheckACK('AT+HTTPPARA="URL","'+url+'"')
-			_SendATCommand("AT+HTTPDATA="+data.length+",1000")
+			sendATCommandCheckACK('AT+HTTPPARA="URL","'+url+'"')
+			sendATCommand("AT+HTTPDATA="+data.length+",1000")
 			basic.pause(100)
-			_SendATCommand(data,1000,false)
-			_SendATCommandCheckACK('AT+HTTPACTION=1')
+			sendATCommand(data,1000,false)
+			sendATCommandCheckACK('AT+HTTPACTION=1')
 		}
 
 
@@ -342,7 +344,7 @@ namespace sim7000x {
 	//% weight=100 blockId="sim7000InitGPS"
 	//% block="sim7000x GPS init" group="6. GPS:"
 	export function InitGPS() {
-		_SendATCommandCheckACK("AT+CGNSPWR=1")
+		sendATCommandCheckACK("AT+CGNSPWR=1")
 	}
 
 	/**
@@ -351,11 +353,11 @@ namespace sim7000x {
 	//% weight=100 blockId="sim7000GPSPosition"
 	//% block="sim7000x GPS get position" group="6. GPS:"
 	export function GPSGetPosition(): string {
-		let modemResponse=_SendATCommand("AT+CGNSINF")
+		let modemResponse=sendATCommand("AT+CGNSINF")
 		let position = ""
 		while(!modemResponse.includes("+CGNSINF: 1,1")){
 			basic.pause(500)
-			modemResponse=_SendATCommand("AT+CGNSINF")
+			modemResponse=sendATCommand("AT+CGNSINF")
 		}
 	  let tmp=modemResponse.split(",")
 		position = tmp[3]+","+tmp[4]
@@ -371,7 +373,7 @@ namespace sim7000x {
 	export function USBSerialLog(message: string) {
 		serial.redirectToUSB()
 		serial.writeLine(message)
-		serial.redirect(_sim7000RX_Pin, _sim7000TX_Pin, _sim7000BaudRate)
+		serial.redirect(sim7000RXPin, sim7000TXPin, sim7000BaudRate)
 	}
 
 	/**
@@ -383,9 +385,9 @@ namespace sim7000x {
 	//% group="7. Low level  and debug functions:"
 	export function SendATCommand(atCommand: string, timeout?: number): string {
 		if(timeout){
-			return _SendATCommand(atCommand,timeout)
+			return sendATCommand(atCommand,timeout)
 		}else{
-			return _SendATCommand(atCommand)
+			return sendATCommand(atCommand)
 		}
 
 	}
