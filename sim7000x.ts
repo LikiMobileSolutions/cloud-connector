@@ -1,13 +1,13 @@
 /**
- * SIM700x block
+ * sim7000x block
  */
 
 //% color=#5042f4 icon="\uf093"
-namespace SIM700x {
+namespace sim7000x {
 
-	let _SIM700TX_Pin=SerialPin.P1
-	let _SIM700RX_Pin=SerialPin.P0
-	let _SIM700BaudRate=BaudRate.BaudRate115200
+	let _sim7000TX_Pin=SerialPin.P1
+	let _sim7000RX_Pin=SerialPin.P0
+	let _sim7000BaudRate=BaudRate.BaudRate115200
 	let usbLogging = false
 	let _Apn_name=""
 
@@ -56,15 +56,15 @@ namespace SIM700x {
 	/**
 	* Init module
 	*/
-	//% weight=100 blockId="SIM700Init"
-	//% block="SIM700x Init RX: %SIM700RX_Pin TX: %SIM700TX_Pin Baud:%SIM700BaudRate"
-	//% SIM700TX_Pin.defl=SerialPin.P1 SIM700RX_Pin.defl=SerialPin.P0 SIM700BaudRate.defl=BaudRate.BaudRate115200 group="1. Setup: "
-	export function Init(SIM700TX_Pin: SerialPin, SIM700RX_Pin: SerialPin, SIM700BaudRate: BaudRate) {
-			_SIM700RX_Pin=SIM700RX_Pin
-			_SIM700TX_Pin=SIM700TX_Pin
-			_SIM700BaudRate=SIM700BaudRate
+	//% weight=100 blockId="sim7000Init"
+	//% block="sim7000x Init RX: %sim7000RX_Pin TX: %sim7000TX_Pin Baud:%sim7000BaudRate"
+	//% sim7000TX_Pin.defl=SerialPin.P1 sim7000RX_Pin.defl=SerialPin.P0 sim7000BaudRate.defl=BaudRate.BaudRate115200 group="1. Setup: "
+	export function Init(sim7000TX_Pin: SerialPin, sim7000RX_Pin: SerialPin, sim7000BaudRate: BaudRate) {
+			_sim7000RX_Pin=sim7000RX_Pin
+			_sim7000TX_Pin=sim7000TX_Pin
+			_sim7000BaudRate=sim7000BaudRate
 
-			serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
+			serial.redirect(_sim7000RX_Pin, _sim7000TX_Pin, _sim7000BaudRate)
 			serial.setWriteLinePadding(0)
 			serial.setRxBufferSize(128)
 
@@ -82,7 +82,7 @@ namespace SIM700x {
 	* return -1 if something is wrong and signal can't be fetched
 	*/
 	//% weight=100 blockId="getSignalQuality"
-	//% block="SIM700x GetSignalQuality" group="2. Status: "
+	//% block="sim7000x GetSignalQuality" group="2. Status: "
 	export function getSignalQuality(): number {
 			let signalStrengthRaw = _SendATCommand("AT+CSQ")
 			let signalStrengthLevel = -1
@@ -100,7 +100,7 @@ namespace SIM700x {
 	* Display signal strength on led matrix
 	*/
 	//% weight=100 blockId="displaySignalQuality"
-	//% block="SIM700x DispalySignalQuality" group="2. Status: "
+	//% block="sim7000x DispalySignalQuality" group="2. Status: "
 	export function displaySignalQuality() {
 		let signalQuality = getSignalQuality()
 		if (signalQuality == 1) {
@@ -124,7 +124,7 @@ namespace SIM700x {
 	* return gsm network registration status as code, 1 or 5 mean sucessfull registartion
 	*/
 	//% weight=100 blockId="getGSMRegistrationStatus"
-	//% block="SIM700x GetGSMRegistrationStatus" group="2. Status: "
+	//% block="sim7000x GetGSMRegistrationStatus" group="2. Status: "
 	export function getGSMRegistrationStatus(): number {
 			let response = _SendATCommand("AT+CREG?")
 			let registrationStatusCode = -1;
@@ -141,7 +141,7 @@ namespace SIM700x {
 	*  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
 	*/
 	//% weight=100 blockId="sendSmsMessage"
-	//% block="SIM700x sendSmsMessage to: %phone_num, content: %content " group="3. GSM: "
+	//% block="sim7000x sendSmsMessage to: %phone_num, content: %content " group="3. GSM: "
 	export function sendSmsMessage(phone_num: string, content: string) {
 			_SendATCommand("AT+CMGF=1") // set text mode
 			_SendATCommand('AT+CMGS="' + phone_num + '"')
@@ -154,7 +154,7 @@ namespace SIM700x {
 	*example "10/05/06,00:01:52+08
 	*/
 	//% weight=100 blockId="getDateAndTime"
-	//% block="SIM700x getDateAndTime" group="3. GSM: "
+	//% block="sim7000x getDateAndTime" group="3. GSM: "
 	export function getDateAndTime(): string {
 			_SendATCommand("AT+CLTS=1") // enable in case it's not enabled
 			let modemResponse=_SendATCommand('AT+CCLK?')
@@ -176,8 +176,8 @@ namespace SIM700x {
 	/**
 	* Mqtt init
 	*/
-	//% weight=100 blockId="SIM700MqttInit"
-	//% block="SIM700x MQTT init: APNname:%ApnName" group="4. MQTT:"
+	//% weight=100 blockId="sim7000MqttInit"
+	//% block="sim7000x MQTT init: APNname:%ApnName" group="4. MQTT:"
 	export function MqttInit(ApnName: string) {
 		_Apn_name = ApnName
 		let gsmStatus=getGSMRegistrationStatus()
@@ -203,8 +203,8 @@ namespace SIM700x {
 	/**
 	* MQTT connect
 	*/
-	//% weight=100 blockId="SIM700InitMQTT"
-	//% block="SIM700x MQTT connect BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. MQTT:"
+	//% weight=100 blockId="sim7000InitMQTT"
+	//% block="sim7000x MQTT connect BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. MQTT:"
 	export function MqttConnect(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
 		_SendATCommandCheckACK('AT+SMCONF="URL","'+brokerUrl+'","'+brokerPort+'"')
 		_SendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
@@ -219,8 +219,8 @@ namespace SIM700x {
 	/**
 	* MQTT publish message
 	*/
-	//% weight=100 blockId="SIM700MqttPublish"
-	//% block="SIM700x MQTT publish topic:%brokerUrl message:%message||qos:%qos retain:%retain" group="4. MQTT:"
+	//% weight=100 blockId="sim7000MqttPublish"
+	//% block="sim7000x MQTT publish topic:%brokerUrl message:%message||qos:%qos retain:%retain" group="4. MQTT:"
 	//% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
 	export function MqttPublish(topic: string, message: string, qos=1, retain=0) {
 			let cmd='AT+SMPUB="'+topic+'",' + (message.length) + ','+qos+','+retain
@@ -255,8 +255,8 @@ namespace SIM700x {
 	/**
 	* MQTT subscribe
 	*/
-	//% weight=100 blockId="SIM700SubscribeMQTT"
-	//% block="SIM700x MQTT subscribe topic:%topic" group="4. MQTT:"
+	//% weight=100 blockId="sim7000SubscribeMQTT"
+	//% block="sim7000x MQTT subscribe topic:%topic" group="4. MQTT:"
 	export function MqttSubscribe(topic: string) {
 		_SendATCommand('AT+SMSUB="'+topic+'",1')
 		mqttSubscribeTopics.push(topic)
@@ -281,8 +281,8 @@ namespace SIM700x {
 	/**
 	* MQTT on subscription receive
 	*/
-	//% weight=100 blockId="SIM700SubsMsgReceivedMQTT"
-	//% block="SIM700x MQTT on subscribtion received" group="4. MQTT:"
+	//% weight=100 blockId="sim7000SubsMsgReceivedMQTT"
+	//% block="sim7000x MQTT on subscribtion received" group="4. MQTT:"
 	//% draggableParameters
 	export function MqttMessageReceived(handler: (topic: string, message: string) => void) {
 		mqttSubscribeHandler = handler
@@ -292,8 +292,8 @@ namespace SIM700x {
 	/**
 	* MQTT live object publish message
 	*/
-	//% weight=100 blockId="SIM700MqttLiveObjectPublish"
-	//% block="SIM700x Live object publish stream:%stream, timestamp:%timestamp data:%data" group="4. MQTT:"
+	//% weight=100 blockId="sim7000MqttLiveObjectPublish"
+	//% block="sim7000x Live object publish stream:%stream, timestamp:%timestamp data:%data" group="4. MQTT:"
 	export function LiveObjectPublish(stream: string,timestamp: string, data: string[]) {
 		let dataString = ''
 		for(let i=0; i<data.length; i++){
@@ -310,8 +310,8 @@ namespace SIM700x {
 		/**
 		* Http init
 		*/
-		//% weight=100 blockId="SIM700InitHTTP"
-		//% block="SIM700x HTTP init apn:%apnName" group="5. HTTP:"
+		//% weight=100 blockId="sim7000InitHTTP"
+		//% block="sim7000x HTTP init apn:%apnName" group="5. HTTP:"
 		export function HttpInit(apnName: string) {
 			_SendATCommandCheckACK('AT+SAPBR=3,1,"APN","'+apnName+'"')
 			_SendATCommandCheckACK('AT+SAPBR=1,1')
@@ -325,8 +325,8 @@ namespace SIM700x {
 		/**
 		* Http post
 		*/
-		//% weight=100 blockId="SIM700HTTPPost"
-		//% block="SIM700x HTTP post url:%url data:%data" group="5. HTTP:"
+		//% weight=100 blockId="sim7000HTTPPost"
+		//% block="sim7000x HTTP post url:%url data:%data" group="5. HTTP:"
 		export function HttpPost(url: string, data: string) {
 			_SendATCommandCheckACK('AT+HTTPPARA="URL","'+url+'"')
 			_SendATCommand("AT+HTTPDATA="+data.length+",1000")
@@ -339,8 +339,8 @@ namespace SIM700x {
 	/**
 	* GPS init
 	*/
-	//% weight=100 blockId="SIM700InitGPS"
-	//% block="SIM700x GPS init" group="6. GPS:"
+	//% weight=100 blockId="sim7000InitGPS"
+	//% block="sim7000x GPS init" group="6. GPS:"
 	export function InitGPS() {
 		_SendATCommandCheckACK("AT+CGNSPWR=1")
 	}
@@ -348,8 +348,8 @@ namespace SIM700x {
 	/**
 	* GNSS get position
 	*/
-	//% weight=100 blockId="SIM700GPSPosition"
-	//% block="SIM700x GPS get position" group="6. GPS:"
+	//% weight=100 blockId="sim7000GPSPosition"
+	//% block="sim7000x GPS get position" group="6. GPS:"
 	export function GPSGetPosition(): string {
 		let modemResponse=_SendATCommand("AT+CGNSINF")
 		let position = ""
@@ -365,20 +365,20 @@ namespace SIM700x {
 	/**
 	* log debug message using usb serial connection
 	*/
-	//% weight=100 blockId="SIM700USBSerialLog"
+	//% weight=100 blockId="sim7000USBSerialLog"
 	//% block="USBSerialLog %message"
 	//% group="7. Low level  and debug functions:"
 	export function USBSerialLog(message: string) {
 		serial.redirectToUSB()
 		serial.writeLine(message)
-		serial.redirect(_SIM700RX_Pin, _SIM700TX_Pin, _SIM700BaudRate)
+		serial.redirect(_sim7000RX_Pin, _sim7000TX_Pin, _sim7000BaudRate)
 	}
 
 	/**
 	* Send plain AT command to modem and return response from it
 	*/
 	//% weight=100 blockId="SendATCommand"
-	//% block="SIM700x SendATCommand %atCommand || timeout:%timeout"
+	//% block="sim7000x SendATCommand %atCommand || timeout:%timeout"
 	//% timeout.defl=1000 expandableArgumentMode="toggle"
 	//% group="7. Low level  and debug functions:"
 	export function SendATCommand(atCommand: string, timeout?: number): string {

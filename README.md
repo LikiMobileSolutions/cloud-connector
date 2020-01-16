@@ -1,5 +1,4 @@
-# pxt-sim700x
-
+# pxt-sim7000x
 
 
 ## TODO
@@ -18,4 +17,3 @@ Read more at https://makecode.microbit.org/extensions
 
 * for PXT/microbit
 (The metadata above is needed for package search.)
-
