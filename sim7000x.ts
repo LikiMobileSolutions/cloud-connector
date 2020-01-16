@@ -2,7 +2,7 @@
  * sim7000x block
  */
 
-//% color=#5042f4 icon="\uf093"
+//% color=#179600 icon="\uf093"
 namespace sim7000x {
 
 	let sim7000TXPin=SerialPin.P1
