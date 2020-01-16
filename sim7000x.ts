@@ -126,7 +126,7 @@ namespace sim7000x {
 	* return gsm network registration status as code, 1 or 5 mean sucessfull registartion
 	*/
 	//% weight=100 blockId="getGSMRegistrationStatus"
-	//% block="sim7000x Get GSM registration status" group="2. Status: "
+	//% block="sim7000x GSM registration status" group="2. Status: "
 	export function getGSMRegistrationStatus(): number {
 			let response = sendATCommand("AT+CREG?")
 			let registrationStatusCode = -1;
@@ -156,7 +156,7 @@ namespace sim7000x {
 	*example "10/05/06,00:01:52+08
 	*/
 	//% weight=100 blockId="getDateAndTime"
-	//% block="sim7000x get Date And Time" group="3. GSM: "
+	//% block="sim7000x Date And Time" group="3. GSM: "
 	export function getDateAndTime(): string {
 			sendATCommand("AT+CLTS=1") // enable in case it's not enabled
 			let modemResponse=sendATCommand('AT+CCLK?')
