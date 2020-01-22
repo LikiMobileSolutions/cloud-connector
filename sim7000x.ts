@@ -11,7 +11,8 @@ namespace sim7000x {
 
 	let apnName=""
 
-	let usbLogging = false
+	let echoEnabled = false //switch for debug purposes
+	let usbLogging = false  //switch for debug purposes
 
 	/**
 	* (internal function)
@@ -74,7 +75,7 @@ namespace sim7000x {
 			while(!atResponse.includes("OK")){ //check in loop if echo is enabled
 				atResponse = sendATCommand("AT",1000)
 			}
-			sendATCommand("ATE 0") // disable echo
+			sendATCommand("ATE "+(echoEnabled ? "1":"0"))
 			sendATCommand("AT+CMEE=2") // extend error logging
 	}
 
@@ -264,19 +265,34 @@ namespace sim7000x {
 		mqttSubscribeTopics.push(topic)
 
 		//attach listener
-		serial.onDataReceived("+", function () {
-			basic.pause(50)
-			let dataRaw = serial.readString()
-			let data = dataRaw.substr(dataRaw.indexOf("+"),dataRaw.length)
-			if(data.includes("SMSUB:")){
+		if(!echoEnabled){ //Normal operation
+			serial.onDataReceived("+", function () {
+				basic.pause(50)
+				let dataRaw = serial.readString()
+				let data = dataRaw.substr(dataRaw.indexOf("+"),dataRaw.length)
+				if(data.includes("SMSUB:")){
+					for(let i=0; i<mqttSubscribeTopics.length; i++){
+						if(data.includes(mqttSubscribeTopics[i])){
+							let message = (data.split('","')[1]) // extract message from AT Response
+							mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
+						}
+					}
+				}
+			})
+		}else{ //echo is enabled, for debug purposes
+			//when echo is enabled, we need to trigger listener on different char
+			// as on "+" it will be triggered on every command, so need to use ":" to trigger
+			serial.onDataReceived(":", function () {
+				basic.pause(50)
+				let dataRaw = serial.readString()
 				for(let i=0; i<mqttSubscribeTopics.length; i++){
-					if(data.includes(mqttSubscribeTopics[i])){
-						let message = (data.split('","')[1]) // extract message from AT Response
+					if(dataRaw.includes(mqttSubscribeTopics[i])){
+						let message = (dataRaw[i].split('","')[1]) // extract message from AT Response
 						mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
 					}
 				}
-			}
-		})
+			})
+		}
 	}
 
 
