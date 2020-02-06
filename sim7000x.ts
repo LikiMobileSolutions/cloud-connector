@@ -11,13 +11,21 @@ namespace sim7000x {
 
 	let apnName=""
 
-	let echoEnabled = false //switch for debug purposes
-	let usbLogging = false  //switch for debug purposes
+	//switches for debug purposes
+	let echoEnabled = false
+	let usbLoggingLevel = 1
+	/*
+	usbLoggingLevel = 0 Logging disabled
+	usbLoggingLevel = 1 only human readable messages are logged
+	usbLoggingLevel = 2 full logging of AT communication between SIM7000 and microbit
+	*/
+
 
 	/**
 	* (internal function)
 	*/
-	function sendATCommand(atCommand: string, timeout=1000, useNewLine=true, additionalWaitTime=1000): string {
+	function sendATCommand(atCommand: string, timeout=1000, useNewLine=true, forceLogDisable=false): string {
+			serial.readString() //way to empty buffer
 			if(useNewLine){
 				serial.writeLine(atCommand)
 			}else{
@@ -32,10 +40,11 @@ namespace sim7000x {
 		  		break
 				}
 			}
-		if(usbLogging){
-			USBSerialLog("Command: "+atCommand+"\r\nResponse: "+buffer)
-		}
-		return buffer
+
+			if(!forceLogDisable){ //for criticial AT command usb logging should be disabled, due to stability issues
+				USBSerialLog("Command: "+atCommand+"\r\nResponse: "+buffer,2)
+			}
+			return buffer
 	}
 
 	/**
@@ -149,6 +158,7 @@ namespace sim7000x {
 			sendATCommand("AT+CMGF=1") // set text mode
 			sendATCommand('AT+CMGS="' + phone_num + '"')
 			sendATCommand(content + "\x1A")
+			USBSerialLog("Sent SMS message",1)
 	}
 
 	/**
@@ -187,6 +197,7 @@ namespace sim7000x {
 		while(!(gsmStatus==1 || gsmStatus==5)){
 			gsmStatus=getGSMRegistrationStatus()
 			basic.pause(500)
+			USBSerialLog("Waiting for GSM network",1)
 		}
 		sendATCommand('AT+CNACT=1,"'+ApnName+'"')
 		basic.pause(1000)
@@ -194,13 +205,16 @@ namespace sim7000x {
 		let tries = 0
 		while(!netStatus.includes("+CNACT: 1")){
 			if(tries>=8){
+				USBSerialLog("",1)
 				sendATCommand('AT+CNACT=1,"'+ApnName+'"')
 				tries=0
 			}
 			basic.pause(1000)
+			USBSerialLog("Waiting for GPRS network connection",1)
 			netStatus=sendATCommand('AT+CNACT?')
 			tries++
 		}
+
 	}
 
 	/**
@@ -213,10 +227,12 @@ namespace sim7000x {
 		sendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
 		sendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
 		sendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
-		if(! sendATCommandCheckACK("AT+SMCONN",2)){
+		if(!sendATCommandCheckACK("AT+SMCONN",2)){
+			USBSerialLog("MQTT connection failed, retrying...",1)
 			sendATCommand("AT+SMDISC") //try to disconnect first if connection failed
-			sendATCommandCheckACK("AT+SMCONN") //try to connect second time
+			sendATCommandCheckACK("AT+SMCONN",-1) //try to connect second time
 		}
+		USBSerialLog("MQTT connection established",1)
 	}
 
 	/**
@@ -227,13 +243,14 @@ namespace sim7000x {
 	//% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
 	export function MqttPublish(topic: string, message: string, qos=1, retain=0) {
 			let cmd='AT+SMPUB="'+topic+'",' + (message.length) + ','+qos+','+retain
-			sendATCommand(cmd,100)
+			sendATCommand(cmd,100,true,true)
 			basic.pause(100)
 
-			let modemResponse=sendATCommand(message,3000,false)
+			let modemResponse=sendATCommand(message,3000,false,true)
 
 			let tries=0
 			while((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries>6)) ){
+				USBSerialLog("MQTT publish failed, retrying... attepmt:"+tries,1)
 				let modemNetState=sendATCommand("AT+CNACT?",-1)
 				let mqttConnectionState=sendATCommand("AT+SMSTATE?",-1)
 				if(modemNetState.includes("+CNACT: 0") ){
@@ -248,11 +265,11 @@ namespace sim7000x {
 				}
 				//retry message publishing
 				sendATCommand(cmd,100)
-				modemResponse=sendATCommand(message,5000,false)
+				modemResponse=sendATCommand(message,5000,false,true)
 
 				tries++
 			}
-
+			USBSerialLog('MQTT message on topic: "'+topic+'" published',1)
 	}
 
 	/**
@@ -274,6 +291,7 @@ namespace sim7000x {
 					for(let i=0; i<mqttSubscribeTopics.length; i++){
 						if(data.includes(mqttSubscribeTopics[i])){
 							let message = (data.split('","')[1]) // extract message from AT Response
+							USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
 							mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
 						}
 					}
@@ -288,6 +306,7 @@ namespace sim7000x {
 				for(let i=0; i<mqttSubscribeTopics.length; i++){
 					if(dataRaw.includes(mqttSubscribeTopics[i])){
 						let message = (dataRaw[i].split('","')[1]) // extract message from AT Response
+						USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
 						mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
 					}
 				}
@@ -372,7 +391,7 @@ namespace sim7000x {
 		let modemResponse=sendATCommand("AT+CGNSINF")
 		let position = ""
 		while(!modemResponse.includes("+CGNSINF: 1,1")){
-			basic.pause(500)
+			basic.pause(1000)
 			modemResponse=sendATCommand("AT+CGNSINF")
 		}
 	  let tmp=modemResponse.split(",")
@@ -386,9 +405,16 @@ namespace sim7000x {
 	//% weight=100 blockId="sim7000USBSerialLog"
 	//% block="USBSerialLog %message"
 	//% group="7. Low level  and debug functions:"
-	export function USBSerialLog(message: string) {
+	export function USBSerialLog(message: string, level?: number) {
+		if(level){
+			if(usbLoggingLevel < level){
+				return
+			}
+		}
+		basic.pause(10)
 		serial.redirectToUSB()
 		serial.writeLine(message)
+		basic.pause(10)
 		serial.redirect(sim7000RXPin, sim7000TXPin, sim7000BaudRate)
 	}
 
