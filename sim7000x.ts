@@ -413,7 +413,7 @@ namespace sim7000x {
 		}
 		basic.pause(10)
 		serial.redirectToUSB()
-		serial.writeLine(message)
+		serial.writeLine(input.runningTime()+": "+message)
 		basic.pause(10)
 		serial.redirect(sim7000RXPin, sim7000TXPin, sim7000BaudRate)
 	}
