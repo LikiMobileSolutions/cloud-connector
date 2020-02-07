@@ -24,7 +24,7 @@ namespace sim7000x {
 	/**
 	* (internal function)
 	*/
-	function sendATCommand(atCommand: string, timeout=1000, useNewLine=true, forceLogDisable=false): string {
+	function sendATCommand(atCommand: string, timeout=1000, useNewLine=true, forceLogDisable=false, additionalWaitTime=0): string {
 			serial.readString() //way to empty buffer
 			if(useNewLine){
 				serial.writeLine(atCommand)
@@ -34,11 +34,17 @@ namespace sim7000x {
 
 			let startTs = input.runningTime()
 			let buffer = ""
+
 			while ( (input.runningTime() - startTs <= timeout) || (timeout==-1) ) { //read until timeout is not exceeded
 				buffer += serial.readString()
 				if (buffer.includes("OK") || buffer.includes("ERROR")) { //command completed, modem responded
 		  		break
 				}
+			}
+
+			if(additionalWaitTime>0){
+				basic.pause(additionalWaitTime)
+				buffer += serial.readString()
 			}
 
 			if(!forceLogDisable){ //for criticial AT command usb logging should be disabled, due to stability issues
@@ -246,7 +252,7 @@ namespace sim7000x {
 			sendATCommand(cmd,100,true,true)
 			basic.pause(100)
 
-			let modemResponse=sendATCommand(message,3000,false,true)
+			let modemResponse=sendATCommand(message,3000,false,true,1000)
 
 			let tries=0
 			while((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries>6)) ){
