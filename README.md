@@ -1,4 +1,4 @@
-# Liki SIM7000 GSM/GPRS/IOT Shield
+Microbit# Liki SIM7000 GSM/GPRS/IOT Shield
 
 A PXT library for Liki SIM7000 GSM/GPRS/IoT shield
 
@@ -15,10 +15,10 @@ This block initalise SIM7000 module
 sim7000x.init(SerialPin.P0, SerialPin.P1, BaudRate.BaudRate115200,1)
 ```
 <b>Arguments:</b><br>
-1-st argument(sim7000TX_Pin): pin of microbit to which TX pin[of SIM7000] is connected, ex. SerialPin.P0 <br>
-2-nd argument(sim7000TX_Pin): pin of microbit to which RX pin[of SIM7000] is connected, ex. SerialPin.P1 <br>
+1-st argument(sim7000TX_Pin): pin of Microbit to which TX pin[of SIM7000] is connected, ex. SerialPin.P0 <br>
+2-nd argument(sim7000TX_Pin): pin of Microbit to which RX pin[of SIM7000] is connected, ex. SerialPin.P1 <br>
 3-rd argument(sim7000BaudRate): baudrate for communication with sim7000, usually it will be 115200 baud, so ex. BaudRate.BaudRate115200 <br>
-4-th argument(logging level): 0 - logging disabled, 1 - logging human readable messages, 2 - logging of complete AT communication between sim7000 and micro:bit
+4-th argument(logging level): 0 - logging disabled, 1 - logging human readable messages, 2 - logging of complete AT communication between sim7000 and Microbit
 
 
 ### 2. Get GSM signal quality
@@ -31,7 +31,7 @@ sim7000x.getSignalQuality()
 
 ### 3. Display signal quality
 
-Display signal quality on micro:bit led matrix
+Display signal quality on Microbit led matrix
 
 ```blocks
 sim7000x.displaySignalQuality()
@@ -180,12 +180,12 @@ sim7000x.SendATCommand("AT+CSQ")
 ---
 
 ## Debugging
-Some debug information can be fetched by connecting to microbit serial port when logging level in init block was set to 1 or 2. To get information how to connect to microbit serial port please refeer to "using a computer terminal" paragraph under following link:
+Some debug information can be fetched by connecting to Microbit serial port when logging level in init block was set to 1 or 2. For how to connect to Microbit serial port please refer to "using a computer terminal" paragraph under following link:
 https://support.microbit.org/support/solutions/articles/19000022103-outputing-serial-data-from-the-micro-bit-to-a-computer
 
 
 ## Limitations
-This library consumes micro:bit serial module, so during usage of this library you should not use "serial" module at all, as this will probably cause some problems. You can still log some message through usb serial but you should use dedicated block "USBSerialLog..." provided by this library.
+This library consumes micro:bit serial module, due to that during usage of this library you should not use "serial" module at all, as this will probably cause some problems. You can still log some message through usb serial but you should use dedicated block "USBSerialLog..." provided by this library.
 
 
 ## License
