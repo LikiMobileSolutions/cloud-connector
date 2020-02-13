@@ -154,13 +154,11 @@ Initialize/Enable GPS module, by default it's disabled.
 sim7000x.InitGPS()
 ```
 ### 14. Get GPS position
-Get position using GPS module
+Returns position string in format: lat,lon ex. "23.26577,-85.54324", you can use then this string to build google maps url to location for example:<br>
+https://www.google.com/maps/search/?api=1&query=23.26577,-85.54324
 ```blocks
 sim7000x.GPSGetPosition()
 ```
-Returns position string in format: lat,lon ex. "23.26577,-85.54324", you can use then this string to build google maps url to location for example:<br>
-https://www.google.com/maps/search/?api=1&query=23.26577,-85.54324
-
 
 ### 15. USB serial log
 Log debug message using serial usb
@@ -171,14 +169,23 @@ sim7000x.USBSerialLog("Debug message")
 1-st argument(messsage): Message to log
 
 ### 16. Send AT command
-Send plain AT command and get response
+Send plain AT command and returns modem response
 ```blocks
 sim7000x.SendATCommand("AT+CSQ")
 ```
-</b>Arguments:<b><br>
+<b>Arguments:</b><br>
 1-st argument(atCommand): AT command to send<br>
 2-nd argument(timeout): Maximum time(in ms) to wait for modem response<br>
-Returns modem response(as String)
+
+---
+
+## Debugging
+Some debug information can be fetched by connecting to microbit serial port when logging level in init block was set to 1 or 2. To get information how to connect to microbit serial port please refeer to "using a computer terminal" paragraph under following link:
+https://support.microbit.org/support/solutions/articles/19000022103-outputing-serial-data-from-the-micro-bit-to-a-computer
+
+
+## Limitations
+This library consumes micro:bit serial module, so during usage of this library you should not use "serial" module at all, as this will probably cause some problems. You can still log some message through usb serial but you should use dedicated block "USBSerialLog..." provided by this library.
 
 
 ## License
