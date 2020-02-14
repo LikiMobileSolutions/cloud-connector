@@ -75,12 +75,13 @@ namespace sim7000x {
 	* Init module
 	*/
 	//% weight=100 blockId="sim7000Init"
-	//% block="sim7000x Init RX: %sim7000RX_Pin TX: %sim7000TX_Pin Baud:%sim7000BaudRate"
-	//% sim7000TX_Pin.defl=SerialPin.P1 sim7000RX_Pin.defl=SerialPin.P0 sim7000BaudRate.defl=BaudRate.BaudRate115200 group="1. Setup: "
-	export function init(sim7000TX_Pin: SerialPin, sim7000RX_Pin: SerialPin, sim7000BaudRate: BaudRate) {
+	//% block="sim7000x Init RX: %sim7000RX_Pin TX: %sim7000TX_Pin Baud:%sim7000BaudRate Logging level: %loggingLevel"
+	//% sim7000TX_Pin.defl=SerialPin.P1 sim7000RX_Pin.defl=SerialPin.P0 sim7000BaudRate.defl=BaudRate.BaudRate115200 loggingLevel.defl=0 group="1. Setup: "
+	export function init(sim7000TX_Pin: SerialPin, sim7000RX_Pin: SerialPin, sim7000BaudRate: BaudRate, loggingLevel?: number) {
 			sim7000RXPin=sim7000RX_Pin
 			sim7000TXPin=sim7000TX_Pin
 			sim7000BaudRate=sim7000BaudRate
+			usbLoggingLevel = loggingLevel
 
 			serial.redirect(sim7000RXPin, sim7000TXPin, sim7000BaudRate)
 			serial.setWriteLinePadding(0)
@@ -233,6 +234,7 @@ namespace sim7000x {
 		sendATCommandCheckACK('AT+SMCONF="CLIENTID","'+clientId+'"')
 		sendATCommandCheckACK('AT+SMCONF="USERNAME","'+username+'"')
 		sendATCommandCheckACK('AT+SMCONF="PASSWORD","'+password+'"')
+		USBSerialLog("Establishing MQTT connection",1)
 		if(!sendATCommandCheckACK("AT+SMCONN",2)){
 			USBSerialLog("MQTT connection failed, retrying...",1)
 			sendATCommand("AT+SMDISC") //try to disconnect first if connection failed
