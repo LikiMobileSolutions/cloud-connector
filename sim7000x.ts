@@ -79,7 +79,7 @@ namespace sim7000x {
 	/**
 	* (internal function)
 	*/
-	function enableHandlers(){
+	function setupHandlers(){
 		//attach listener
 		USBSerialLog("Handlers init...",1)
 		if(!echoEnabled){ //Normal operation
@@ -99,7 +99,7 @@ namespace sim7000x {
 				}
 
 				if(data.includes("CMTI:")){ //SMS received
-					let msgId=data.split(",")[1]
+					let msgId=trimString(data.split(",")[1])
 					let smsRaw=sendATCommand("AT+CMGR="+msgId)
 					let sms = smsRaw.split("\n") // sms[1]=header sms[2]=content of sms
 					USBSerialLog("Received SMS with id:"+msgId+"message:"+trimString(sms[2]),1)
@@ -148,7 +148,7 @@ namespace sim7000x {
 			sendATCommand("AT+CMEE=2") // extend error logging
 			sendATCommand("AT+CMGF=1") // sms message text mode
 			sendATCommand("AT+CMGD=0,1") // delete all readed messages
-			enableHandlers()
+			setupHandlers()
 			USBSerialLog("Init done...",1)
 	}
 
