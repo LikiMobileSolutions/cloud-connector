@@ -11,6 +11,11 @@ namespace sim7000x {
 
 	let apnName=""
 
+	let smsReceivedHandler=function(fromNumber: string, message: string){}
+
+	let mqttSubscribeHandler=function(topic: string, message: string){}
+	let mqttSubscribeTopics: string[] = []
+
 	//switches for debug purposes
 	let echoEnabled = false
 	let usbLoggingLevel = 1
@@ -72,6 +77,54 @@ namespace sim7000x {
 	}
 
 	/**
+	* (internal function)
+	*/
+	function enableHandlers(){
+		//attach listener
+		USBSerialLog("Handlers init...",1)
+		if(!echoEnabled){ //Normal operation
+			serial.onDataReceived("+", function () {
+				basic.pause(50)
+				let dataRaw = serial.readString()
+				let data = dataRaw.substr(dataRaw.indexOf("+"),dataRaw.length)
+
+				if(data.includes("SMSUB:")){ //MQTT subscription received
+					for(let i=0; i<mqttSubscribeTopics.length; i++){
+						if(data.includes(mqttSubscribeTopics[i])){
+							let message = (data.split('","')[1]) // extract message from AT Response
+							USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
+							mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
+						}
+					}
+				}
+
+				if(data.includes("CMTI:")){ //SMS received
+					let msgId=data.split(",")[1]
+					let smsRaw=sendATCommand("AT+CMGR="+msgId)
+					let sms = smsRaw.split("\n") // sms[1]=header sms[2]=content of sms
+					USBSerialLog("Received SMS with id:"+msgId+"message:"+trimString(sms[2]),1)
+					smsReceivedHandler("+48123456789",trimString(sms[2]))
+				}
+
+			})
+		}else{ //echo is enabled, for debug purposes
+			//when echo is enabled, we need to trigger listener on different char
+			// as on "+" it will be triggered on every command, so need to use ":" to trigger
+			serial.onDataReceived(":", function () {
+				basic.pause(50)
+				let dataRaw = serial.readString()
+				for(let i=0; i<mqttSubscribeTopics.length; i++){
+					if(dataRaw.includes(mqttSubscribeTopics[i])){
+						let message = (dataRaw[i].split('","')[1]) // extract message from AT Response
+						USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
+						mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
+					}
+				}
+			})
+		}
+	}
+
+	/**
 	* Init module
 	*/
 	//% weight=100 blockId="sim7000Init"
@@ -93,6 +146,10 @@ namespace sim7000x {
 			}
 			sendATCommand("ATE "+(echoEnabled ? "1":"0"))
 			sendATCommand("AT+CMEE=2") // extend error logging
+			sendATCommand("AT+CMGF=1") // sms message text mode
+			sendATCommand("AT+CMGD=0,1") // delete all readed messages
+			enableHandlers()
+			USBSerialLog("Init done...",1)
 	}
 
 	/**
@@ -168,6 +225,18 @@ namespace sim7000x {
 			USBSerialLog("Sent SMS message",1)
 	}
 
+
+	/**
+	* Handle received SMS message
+	*/
+	//% weight=100 blockId="sim7000SMSMessageReceived"
+	//% block="sim7000x on SMS received" group="3. GSM:"
+	//% draggableParameters
+	export function smsMessageReceived(handler: (fromNumber: string, message: string) => void) {
+		smsReceivedHandler = handler
+	}
+
+
 	/**
 	*get gurrent date and time as string
 	*format is "yy/MM/dd,hh:mm:ss±zz"
@@ -189,9 +258,6 @@ namespace sim7000x {
 
 
 	//MQTT
-	//global mqtt variables
-	let mqttSubscribeHandler=function(topic: string, message: string){}
-	let mqttSubscribeTopics: string[] = []
 
 	/**
 	* Mqtt init
@@ -288,38 +354,6 @@ namespace sim7000x {
 	export function MqttSubscribe(topic: string) {
 		sendATCommand('AT+SMSUB="'+topic+'",1')
 		mqttSubscribeTopics.push(topic)
-
-		//attach listener
-		if(!echoEnabled){ //Normal operation
-			serial.onDataReceived("+", function () {
-				basic.pause(50)
-				let dataRaw = serial.readString()
-				let data = dataRaw.substr(dataRaw.indexOf("+"),dataRaw.length)
-				if(data.includes("SMSUB:")){
-					for(let i=0; i<mqttSubscribeTopics.length; i++){
-						if(data.includes(mqttSubscribeTopics[i])){
-							let message = (data.split('","')[1]) // extract message from AT Response
-							USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
-							mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
-						}
-					}
-				}
-			})
-		}else{ //echo is enabled, for debug purposes
-			//when echo is enabled, we need to trigger listener on different char
-			// as on "+" it will be triggered on every command, so need to use ":" to trigger
-			serial.onDataReceived(":", function () {
-				basic.pause(50)
-				let dataRaw = serial.readString()
-				for(let i=0; i<mqttSubscribeTopics.length; i++){
-					if(dataRaw.includes(mqttSubscribeTopics[i])){
-						let message = (dataRaw[i].split('","')[1]) // extract message from AT Response
-						USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
-						mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
-					}
-				}
-			})
-		}
 	}
 
 

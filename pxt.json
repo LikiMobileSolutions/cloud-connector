@@ -8,7 +8,8 @@
     },
     "files": [
         "README.md",
-        "sim7000x.ts"
+        "sim7000x.ts",
+        "utils.ts",
     ],
     "testFiles": [
         "test.ts"
