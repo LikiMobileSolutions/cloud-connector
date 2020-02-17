@@ -9,7 +9,7 @@
     "files": [
         "README.md",
         "sim7000x.ts",
-        "utils.ts",
+        "utils.ts"
     ],
     "testFiles": [
         "test.ts"
