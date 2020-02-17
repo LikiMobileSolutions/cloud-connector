@@ -233,7 +233,7 @@ namespace sim7000x {
 	* Handle received SMS message
 	*/
 	//% weight=100 blockId="sim7000SMSMessageReceived"
-	//% block="sim7000x on SMS received" group="3. GSM:"
+	//% block="sim7000x on SMS received" group="3. GSM: "
 	//% draggableParameters
 	export function smsMessageReceived(handler: (fromNumber: string, message: string) => void) {
 		smsReceivedHandler = handler
