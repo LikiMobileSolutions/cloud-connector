@@ -105,7 +105,7 @@ namespace sim7000x {
 					let smsHeader = smsRaw.split("\n")[1]
 					let senderPhoneNum =(smsHeader.split(","))[1]
 					senderPhoneNum = senderPhoneNum.slice(1,senderPhoneNum.length-1)
-					USBSerialLog("Received SMS with id:"+msgId+"message:"+smsContent,1)
+					USBSerialLog("Received SMS with id:"+msgId+" message:"+smsContent,1)
 					smsReceivedHandler(senderPhoneNum,smsContent)
 				}
 
