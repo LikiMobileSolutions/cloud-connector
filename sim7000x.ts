@@ -101,9 +101,12 @@ namespace sim7000x {
 				if(data.includes("CMTI:")){ //SMS received
 					let msgId=trimString(data.split(",")[1])
 					let smsRaw=sendATCommand("AT+CMGR="+msgId)
-					let sms = smsRaw.split("\n") // sms[1]=header sms[2]=content of sms
-					USBSerialLog("Received SMS with id:"+msgId+"message:"+trimString(sms[2]),1)
-					smsReceivedHandler("+48123456789",trimString(sms[2]))
+					let smsContent = trimString(smsRaw.split("\n")[2])
+					let smsHeader = smsRaw.split("\n")[1]
+					let senderPhoneNum =(smsHeader.split(","))[1]
+					senderPhoneNum = senderPhoneNum.slice(1,senderPhoneNum.length-1)
+					USBSerialLog("Received SMS with id:"+msgId+"message:"+smsContent,1)
+					smsReceivedHandler(senderPhoneNum,smsContent)
 				}
 
 			})
