@@ -5,30 +5,32 @@
 //% color=#179600 icon="\uf093"
 namespace sim7000x {
 
+	export enum LoggingLevel {
+		DISABLED = 0,
+		VERBOSE = 1, //Only human readable messages will be logged
+		AT_CMDS = 2, //this mean that full(cmd+response) AT communication between modem and microbit will be logged
+	}
+
 	let sim7000TXPin=SerialPin.P1
 	let sim7000RXPin=SerialPin.P0
 	let sim7000BaudRate=BaudRate.BaudRate115200
 
+	//network APN name, defined by user in initialization of network functions
 	let apnName=""
 
-	let smsReceivedHandler=function(fromNumber: string, message: string){}
-
-	let mqttSubscribeHandler=function(topic: string, message: string){}
-	let mqttSubscribeTopics: string[] = []
-
 	//switches for debug purposes
-	let echoEnabled = false
-	let usbLoggingLevel = 1
-	/*
-	usbLoggingLevel = 0 Logging disabled
-	usbLoggingLevel = 1 only human readable messages are logged
-	usbLoggingLevel = 2 full logging of AT communication between SIM7000 and microbit
-	*/
+	let usbLoggingLevel = LoggingLevel.VERBOSE
+	let echoEnabled = false //should be alsways on false during normal operation
 
 	//signal quality report variables
 	let last_csq_ts = 0
 	let last_csq_value = 0
 	let csq_min_interval = 3000
+
+  //Handler functions
+	let smsReceivedHandler=function(fromNumber: string, message: string){}
+	let mqttSubscribeHandler=function(topic: string, message: string){}
+	let mqttSubscribeTopics: string[] = []
 
 	/**
 	* (internal function)
@@ -86,7 +88,7 @@ namespace sim7000x {
 	function setupHandlers(){
 		//attach listener
 		USBSerialLog("Handlers init...",1)
-		if(!echoEnabled){ //Normal operation
+		if(!echoEnabled){ //In case echo is enabled handlers will not work!
 			serial.onDataReceived("+", function () {
 				basic.pause(50)
 				let dataRaw = serial.readString()
@@ -137,8 +139,8 @@ namespace sim7000x {
 	*/
 	//% weight=100 blockId="sim7000Init"
 	//% block="sim7000x Init RX: %sim7000RX_Pin TX: %sim7000TX_Pin Baud:%sim7000BaudRate Logging level: %loggingLevel"
-	//% sim7000TX_Pin.defl=SerialPin.P1 sim7000RX_Pin.defl=SerialPin.P0 sim7000BaudRate.defl=BaudRate.BaudRate115200 loggingLevel.defl=0 group="1. Setup: "
-	export function init(sim7000TX_Pin: SerialPin, sim7000RX_Pin: SerialPin, sim7000BaudRate: BaudRate, loggingLevel?: number) {
+	//% sim7000TX_Pin.defl=SerialPin.P1 sim7000RX_Pin.defl=SerialPin.P0 sim7000BaudRate.defl=BaudRate.BaudRate115200 loggingLevel.defl=LoggingLevel.VERBOSE group="1. Setup: "
+	export function init(sim7000TX_Pin: SerialPin, sim7000RX_Pin: SerialPin, sim7000BaudRate: BaudRate, loggingLevel?: LoggingLevel) {
 			sim7000RXPin=sim7000RX_Pin
 			sim7000TXPin=sim7000TX_Pin
 			sim7000BaudRate=sim7000BaudRate
