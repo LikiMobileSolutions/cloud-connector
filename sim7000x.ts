@@ -115,21 +115,6 @@ namespace sim7000x {
 					smsReceivedHandler(senderPhoneNum,smsContent)
 					sendATCommand("AT+CMGD=0,1") // delete readed message, to prevent memory exhaustion
 				}
-
-			})
-		}else{ //echo is enabled, for debug purposes
-			//when echo is enabled, we need to trigger listener on different char
-			// as on "+" it will be triggered on every command, so need to use ":" to trigger
-			serial.onDataReceived(":", function () {
-				basic.pause(50)
-				let dataRaw = serial.readString()
-				for(let i=0; i<mqttSubscribeTopics.length; i++){
-					if(dataRaw.includes(mqttSubscribeTopics[i])){
-						let message = (dataRaw[i].split('","')[1]) // extract message from AT Response
-						USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
-						mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
-					}
-				}
 			})
 		}
 	}
