@@ -111,6 +111,7 @@ namespace sim7000x {
 					senderPhoneNum = senderPhoneNum.slice(1,senderPhoneNum.length-1)
 					USBSerialLog("Received SMS with id:"+msgId+" message:"+smsContent,1)
 					smsReceivedHandler(senderPhoneNum,smsContent)
+					sendATCommand("AT+CMGD=0,1") // delete readed message, to prevent memory exhaustion
 				}
 
 			})
@@ -154,7 +155,7 @@ namespace sim7000x {
 			sendATCommand("ATE "+(echoEnabled ? "1":"0"))
 			sendATCommand("AT+CMEE=2") // extend error logging
 			sendATCommand("AT+CMGF=1") // sms message text mode
-			sendATCommand("AT+CMGD=0,1") // delete all readed messages
+			sendATCommand("AT+CMGD=0,4") // delete all sms messages
 			setupHandlers()
 			USBSerialLog("Init done...",1)
 	}
