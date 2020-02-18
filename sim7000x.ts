@@ -25,6 +25,10 @@ namespace sim7000x {
 	usbLoggingLevel = 2 full logging of AT communication between SIM7000 and microbit
 	*/
 
+	//signal quality report variables
+	let last_csq_ts = 0
+	let last_csq_value = 0
+	let csq_min_interval = 3000
 
 	/**
 	* (internal function)
@@ -163,16 +167,20 @@ namespace sim7000x {
 	//% weight=100 blockId="getSignalQuality"
 	//% block="sim7000x Signal quality" group="2. Status: "
 	export function getSignalQuality(): number {
-			let signalStrengthRaw = sendATCommand("AT+CSQ")
-			let signalStrengthLevel = -1
-			if (signalStrengthRaw.includes("+CSQ:")) {
-				signalStrengthRaw = signalStrengthRaw.split(": ")[1]
-				signalStrengthRaw = signalStrengthRaw.split(",")[0]
-				if(parseInt(signalStrengthRaw) != 99){ // 99 means that signal can't be fetched
-					signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 1, 5))
+			if(input.runningTime() - last_csq_ts > csq_min_interval){
+				let signalStrengthRaw = sendATCommand("AT+CSQ")
+				let signalStrengthLevel = -1
+				if (signalStrengthRaw.includes("+CSQ:")) {
+					signalStrengthRaw = signalStrengthRaw.split(": ")[1]
+					signalStrengthRaw = signalStrengthRaw.split(",")[0]
+					if(parseInt(signalStrengthRaw) != 99){ // 99 means that signal can't be fetched
+						signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 1, 5))
+					}
 				}
+				last_csq_ts = input.runningTime()
+				last_csq_value=signalStrengthLevel
 			}
-			return signalStrengthLevel
+			return last_csq_value
 	}
 
 	/**
