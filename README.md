@@ -18,7 +18,7 @@ sim7000x.init(SerialPin.P0, SerialPin.P1, BaudRate.BaudRate115200,1)
 1-st argument(sim7000TX_Pin): pin of Microbit to which TX pin[of SIM7000] is connected, ex. SerialPin.P0 <br>
 2-nd argument(sim7000TX_Pin): pin of Microbit to which RX pin[of SIM7000] is connected, ex. SerialPin.P1 <br>
 3-rd argument(sim7000BaudRate): baudrate for communication with sim7000, usually it will be 115200 baud, so ex. BaudRate.BaudRate115200 <br>
-4-th argument(logging level): 0 - logging disabled, 1 - logging human readable messages, 2 - logging of complete AT communication between sim7000 and Microbit
+4-th argument(logging level): DISABLED - no logging, VERBOSE - logging human readable messages, AT_CMDS - logging of complete AT communication between sim7000 and Microbit
 
 
 ### 2. Get GSM signal quality
@@ -59,8 +59,20 @@ sim7000x.getGSMRegistrationStatus()
 sim7000x.sendSmsMessage("+1222333444", "Hello")
 ```
 <b>Arguments:</b><br>
-1-st argument(telephone number): Receipment telephone number, must be in format +[country code][telephone number] <br>
+1-st argument(telephone number): Receipment telephone number, must be in format +[2 digit country code][telephone number] <br>
 2-nd argument(content): Content of sms message, should not contain any special characters.
+
+### 6. On SMS message received
+Handler for handling received sms message, content of this function will be executed when new SMS message will be received
+```blocks
+sim7000x.smsMessageReceived(function (fromNumber, message) {
+    basic.showString("received SMS from: " + fromNumber)
+    basic.showString("message: " + message)
+})
+```
+<b>Arguments:</b><br>
+1-st argument(fromNumer): Telephone number of SMS sender, will be in format +[2 digit country code][telephone number]<br>
+2-nd argument(message): Content of received message<br>
 
 ### 6.Get date and time
 Return date and time from gsm network
