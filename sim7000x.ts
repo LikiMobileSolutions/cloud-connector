@@ -16,7 +16,7 @@ namespace sim7000x {
 	let sim7000BaudRate=BaudRate.BaudRate115200
 
 	//network APN name, defined by user in initialization of network functions
-	let apnName=""
+	let apnName="internet"
 
 	//switches for debug purposes
 	let usbLoggingLevel = LoggingLevel.VERBOSE
@@ -31,6 +31,8 @@ namespace sim7000x {
 	let smsReceivedHandler=function(fromNumber: string, message: string){}
 	let mqttSubscribeHandler=function(topic: string, message: string){}
 	let mqttSubscribeTopics: string[] = []
+
+	let httpsDisconnected=true
 
 	/**
 	* (internal function)
@@ -98,13 +100,12 @@ namespace sim7000x {
 					for(let i=0; i<mqttSubscribeTopics.length; i++){
 						if(data.includes(mqttSubscribeTopics[i])){
 							let message = (data.split('","')[1]) // extract message from AT Response
-							USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received',1)
+							USBSerialLog('MQTT subscription on topic: "'+mqttSubscribeTopics[i]+'" received content:"'+message.slice(0,-3)+'"',1)
 							mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0,-3))
 						}
 					}
 				}
-
-				if(data.includes("CMTI:")){ //SMS received
+				else if(data.includes("CMTI:")){ //SMS received
 					let msgId=trimString(data.split(",")[1])
 					let smsRaw=sendATCommand("AT+CMGR="+msgId)
 					let smsContent = trimString(smsRaw.split("\n")[2])
@@ -115,7 +116,50 @@ namespace sim7000x {
 					smsReceivedHandler(senderPhoneNum,smsContent)
 					sendATCommand("AT+CMGD=0,1") // delete readed message, to prevent memory exhaustion
 				}
+				else if(data.includes("SHREQ:")){
+					let dataSplit = data.split(",")
+					let responseCode = dataSplit[1]
+					let responseLength = dataSplit[2]
+					USBSerialLog("got http response, code:"+responseCode+" ,content length:"+responseLength)
+				}
+				else if(data.includes("SHSTATE: 0")){
+					httpsDisconnected = true
+				}
 			})
+		}
+	}
+
+	/**
+	* (internal function)
+	*/
+	function ensureGsmConnection(){
+		let gsmStatus=getGSMRegistrationStatus()
+		while(!(gsmStatus==1 || gsmStatus==5)){
+			gsmStatus=getGSMRegistrationStatus()
+			basic.pause(500)
+			USBSerialLog("Waiting for GSM network",1)
+		}
+	}
+
+
+	/**
+	* (internal function)
+	*/
+	function ensureGprsConnection(){
+		sendATCommand('AT+CNACT=1,"'+apnName+'"')
+		basic.pause(1000)
+		let netStatus=sendATCommand('AT+CNACT?')
+		let tries = 0
+		while(!netStatus.includes("+CNACT: 1")){
+			if(tries>=8){
+				USBSerialLog("",1)
+				sendATCommand('AT+CNACT=1,"'+apnName+'"')
+				tries=0
+			}
+			basic.pause(1000)
+			USBSerialLog("Waiting for GPRS network connection",1)
+			netStatus=sendATCommand('AT+CNACT?')
+			tries++
 		}
 	}
 
@@ -265,28 +309,8 @@ namespace sim7000x {
 	//% block="sim7000x MQTT init: APNname:%ApnName" group="4. MQTT:"
 	export function MqttInit(ApnName: string) {
 		apnName = ApnName
-		let gsmStatus=getGSMRegistrationStatus()
-		while(!(gsmStatus==1 || gsmStatus==5)){
-			gsmStatus=getGSMRegistrationStatus()
-			basic.pause(500)
-			USBSerialLog("Waiting for GSM network",1)
-		}
-		sendATCommand('AT+CNACT=1,"'+ApnName+'"')
-		basic.pause(1000)
-		let netStatus=sendATCommand('AT+CNACT?')
-		let tries = 0
-		while(!netStatus.includes("+CNACT: 1")){
-			if(tries>=8){
-				USBSerialLog("",1)
-				sendATCommand('AT+CNACT=1,"'+ApnName+'"')
-				tries=0
-			}
-			basic.pause(1000)
-			USBSerialLog("Waiting for GPRS network connection",1)
-			netStatus=sendATCommand('AT+CNACT?')
-			tries++
-		}
-
+		ensureGsmConnection()
+		ensureGprsConnection()
 	}
 
 	/**
@@ -376,7 +400,6 @@ namespace sim7000x {
 		let dataString = ''
 		for(let i=0; i<data.length; i++){
 	    		dataString+=',"'+i+'":"'+data[i]+'"'
-
 		}
 
 		let liveObjectMsg = '{ "s":"'+stream+'", "v": { "timestamp":"'+timestamp+'"'+dataString+'} }'
@@ -413,6 +436,61 @@ namespace sim7000x {
 			sendATCommandCheckACK('AT+HTTPACTION=1')
 		}
 
+		/**
+		* Google sheet writer connect
+		*/
+		//% weight=100 blockId="sim7000GSheetWriter"
+		//% block="sim7000x Google Sheet Writer Connect url:%url data:%data" group="5. HTTP:"
+		export function GSheetWriterInit() {
+			ensureGsmConnection()
+			ensureGprsConnection()
+			USBSerialLog("Trying to init Google sheet writer...")
+			sendATCommand('AT+SHCONF="HEADERLEN",350')
+			sendATCommand('AT+SHCONF="BODYLEN",1024')
+			sendATCommand('AT+CSSLCFG="convert",2,"google.cer"')
+			sendATCommand('AT+SHSSL=1,"google.cer"')
+			sendATCommand('AT+SHCONF="URL","https://script.google.com"')
+			sendATCommand('AT+SHCONN')
+			USBSerialLog("Google script SSL connection established...")
+			httpsDisconnected=false
+		}
+
+		/**
+		* Google sheet writer write
+		*/
+		//% weight=100 blockId="sim7000GSheetWriter"
+		//% block="sim7000x Google Sheet Writer Connect url:%url data:%data" group="5. HTTP:"
+		export function GSheetWrite(scriptId: string,data: string[]) {
+			sendATCommand('AT+SHAHEAD="Content-Type","application/json"')
+
+			let dataString = ""
+			for(let i=0; i<data.length; i++){
+					dataString+=data[i]
+					if(!(i==data.length-1))	dataString+=";";
+			}
+			let setBodyAtCMD='AT+SHBOD="'+dataString+'",'+dataString.length
+			let doPostAtCmd ='AT+SHREQ="macros/s/'+scriptId+'/exec",3';
+
+			let tries = 0
+			let response = ""
+			while(response.includes("ERROR") && tries<5 || response==""){
+				basic.pause(500*tries)
+				sendATCommand(setBodyAtCMD)
+				response = sendATCommand(doPostAtCmd)
+
+				USBSerialLog("AT httpcmd modem response: "+response)
+				if(tries==3){
+					GSheetWriterInit() //reinit
+				}
+				if(response.includes("OK") || response.isEmpty()){// sometimes this cmd return OK, but data isn't sent because connection was terminated
+					if(httpsDisconnected){
+						GSheetWriterInit() //reinit
+					}
+				}
+				tries++
+			}
+
+		}
 
 	/**
 	* GPS init
