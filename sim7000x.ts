@@ -439,8 +439,8 @@ namespace sim7000x {
 		/**
 		* Google sheet writer connect
 		*/
-		//% weight=100 blockId="sim7000GSheetWriter"
-		//% block="sim7000x Google Sheet Writer Connect url:%url data:%data" group="5. HTTP:"
+		//% weight=100 blockId="sim7000GSheetWriterInit"
+		//% block="sim7000x Google Sheet Writer Init group="5. HTTP:"
 		export function GSheetWriterInit() {
 			ensureGsmConnection()
 			ensureGprsConnection()
@@ -458,8 +458,8 @@ namespace sim7000x {
 		/**
 		* Google sheet writer write
 		*/
-		//% weight=100 blockId="sim7000GSheetWriter"
-		//% block="sim7000x Google Sheet Writer Connect url:%url data:%data" group="5. HTTP:"
+		//% weight=100 blockId="sim7000GSheetWriterWrite"
+		//% block="sim7000x Google Sheet Writer Connect script id:%scriptId data:%data" group="5. HTTP:"
 		export function GSheetWrite(scriptId: string,data: string[]) {
 			//sendATCommand('AT+SHAHEAD="Content-Type","application/json"')
 
