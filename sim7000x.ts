@@ -32,7 +32,7 @@ namespace sim7000x {
 	let mqttSubscribeHandler=function(topic: string, message: string){}
 	let mqttSubscribeTopics: string[] = []
 
-	let httpsDisconnected=true
+	let httpsConnected=false
 
 	/**
 	* (internal function)
@@ -120,10 +120,11 @@ namespace sim7000x {
 					let dataSplit = data.split(",")
 					let responseCode = dataSplit[1]
 					let responseLength = dataSplit[2]
-					USBSerialLog("got http response, code:"+responseCode+" ,content length:"+responseLength)
+					USBSerialLog("got http response, code:"+responseCode+" ,content length:"+responseLength,1)
 				}
 				else if(data.includes("SHSTATE: 0")){
-					httpsDisconnected = true
+					USBSerialLog("ups")
+					httpsConnected = false
 				}
 			})
 		}
@@ -182,6 +183,7 @@ namespace sim7000x {
 			let atResponse = sendATCommand("AT")
 			while(!atResponse.includes("OK")){ //check in loop if echo is enabled
 				atResponse = sendATCommand("AT",1000)
+				USBSerialLog("Trying to comunicate with modem...",1)
 			}
 			sendATCommand("ATE "+(echoEnabled ? "1":"0"))
 			sendATCommand("AT+CMEE=2") // extend error logging
@@ -297,8 +299,6 @@ namespace sim7000x {
 			return "Err"
 
 	}
-
-
 
 	//MQTT
 
@@ -452,7 +452,7 @@ namespace sim7000x {
 			sendATCommand('AT+SHCONF="URL","https://script.google.com"')
 			sendATCommand('AT+SHCONN')
 			USBSerialLog("Google script SSL connection established...")
-			httpsDisconnected=false
+			httpsConnected=true
 		}
 
 		/**
@@ -461,7 +461,7 @@ namespace sim7000x {
 		//% weight=100 blockId="sim7000GSheetWriter"
 		//% block="sim7000x Google Sheet Writer Connect url:%url data:%data" group="5. HTTP:"
 		export function GSheetWrite(scriptId: string,data: string[]) {
-			sendATCommand('AT+SHAHEAD="Content-Type","application/json"')
+			//sendATCommand('AT+SHAHEAD="Content-Type","application/json"')
 
 			let dataString = ""
 			for(let i=0; i<data.length; i++){
@@ -471,25 +471,27 @@ namespace sim7000x {
 			let setBodyAtCMD='AT+SHBOD="'+dataString+'",'+dataString.length
 			let doPostAtCmd ='AT+SHREQ="macros/s/'+scriptId+'/exec",3';
 
-			let tries = 0
-			let response = ""
-			while(response.includes("ERROR") && tries<5 || response==""){
-				basic.pause(500*tries)
+			let tries = 1
+			let response = "ERROR"
+			while(response.includes("ERROR") && tries<=5){
 				sendATCommand(setBodyAtCMD)
 				response = sendATCommand(doPostAtCmd)
-
-				USBSerialLog("AT httpcmd modem response: "+response)
+				basic.pause(500*tries)
 				if(tries==3){
-					GSheetWriterInit() //reinit
+					GSheetWriterInit()
 				}
 				if(response.includes("OK") || response.isEmpty()){// sometimes this cmd return OK, but data isn't sent because connection was terminated
-					if(httpsDisconnected){
+					basic.pause(1000)
+					if(!httpsConnected){ //seem that Connection broke
+						USBSerialLog("got disc")
 						GSheetWriterInit() //reinit
+						sendATCommand(setBodyAtCMD)
+						response = sendATCommand(doPostAtCmd)
 					}
 				}
 				tries++
-			}
 
+			}
 		}
 
 	/**
