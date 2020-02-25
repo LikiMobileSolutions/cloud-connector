@@ -440,7 +440,7 @@ namespace sim7000x {
 		* Google sheet writer connect
 		*/
 		//% weight=100 blockId="sim7000GSheetWriterInit"
-		//% block="sim7000x Google Sheet Writer connect group="5. HTTP:"
+		//% block="sim7000x Google Sheet Writer connect" group="5. HTTP:"
 		export function GSheetWriterInit() {
 			ensureGsmConnection()
 			ensureGprsConnection()
