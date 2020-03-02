@@ -33,6 +33,7 @@ namespace sim7000x {
 	let mqttSubscribeTopics: string[] = []
 
 	let httpsConnected=false
+	let requestFailed=false
 
 	/**
 	* (internal function)
@@ -121,9 +122,15 @@ namespace sim7000x {
 					let responseCode = dataSplit[1]
 					let responseLength = dataSplit[2]
 					USBSerialLog("got http response, code:"+responseCode+" ,content length:"+responseLength,1)
+					if(responseLength.includes("700")){ //this actually means error
+						requestFailed=true
+						USBSerialLog("req fail")
+					}else if(responseLength.includes("680")){ //this is fine
+						requestFailed=false
+					}
 				}
 				else if(data.includes("SHSTATE: 0")){
-					USBSerialLog("ups")
+					USBSerialLog("https connection broke",1)
 					httpsConnected = false
 				}
 			})
@@ -153,7 +160,6 @@ namespace sim7000x {
 		let tries = 0
 		while(!netStatus.includes("+CNACT: 1")){
 			if(tries>=8){
-				USBSerialLog("",1)
 				sendATCommand('AT+CNACT=1,"'+apnName+'"')
 				tries=0
 			}
@@ -444,14 +450,14 @@ namespace sim7000x {
 		export function GSheetWriterInit() {
 			ensureGsmConnection()
 			ensureGprsConnection()
-			USBSerialLog("Trying to init Google sheet writer...")
+			USBSerialLog("Trying to init Google sheet writer...",1)
 			sendATCommand('AT+SHCONF="HEADERLEN",350')
 			sendATCommand('AT+SHCONF="BODYLEN",1024')
 			sendATCommand('AT+CSSLCFG="convert",2,"google.cer"')
 			sendATCommand('AT+SHSSL=1,"google.cer"')
 			sendATCommand('AT+SHCONF="URL","https://script.google.com"')
 			sendATCommand('AT+SHCONN')
-			USBSerialLog("Google script SSL connection established...")
+			USBSerialLog("Google script SSL connection established...",1)
 			httpsConnected=true
 		}
 
@@ -461,7 +467,7 @@ namespace sim7000x {
 		//% weight=100 blockId="sim7000GSheetWriterWrite"
 		//% block="sim7000x Google Sheet Writer send data script id:%scriptId data:%data" group="5. HTTP:"
 		export function GSheetWrite(scriptId: string,data: string[]) {
-			sendATCommand('AT+SHAHEAD="Content-Type","application/json"')
+			requestFailed = false
 			let dataString = ""
 			for(let i=0; i<data.length; i++){
 					dataString+=data[i]
@@ -472,7 +478,7 @@ namespace sim7000x {
 
 			let tries = 1
 			let response = "ERROR"
-			while(response.includes("ERROR") && tries<=5){
+			while((response.includes("ERROR") || requestFailed) && tries<=5){
 				sendATCommand(setBodyAtCMD)
 				response = sendATCommand(doPostAtCmd)
 				basic.pause(500*tries)
@@ -481,15 +487,16 @@ namespace sim7000x {
 				}
 				if(response.includes("OK") || response.isEmpty()){// sometimes this cmd return OK, but data isn't sent because connection was terminated
 					basic.pause(1000)
-					if(!httpsConnected){ //seem that Connection broke
-						USBSerialLog("got disc")
+					if( (!httpsConnected)){ //seem that Connection broke
+						USBSerialLog("gsheet reinit")
 						GSheetWriterInit() //reinit
 						sendATCommand(setBodyAtCMD)
 						response = sendATCommand(doPostAtCmd)
+						USBSerialLog("resent")
+						basic.pause(1000)
 					}
 				}
 				tries++
-
 			}
 		}
 
