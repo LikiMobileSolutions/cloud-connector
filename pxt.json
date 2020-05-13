@@ -1,18 +1,19 @@
 {
-  "name": "pxt-sim7000x",
-  "version": "0.2.10",
-  "description": "",
-  "dependencies": {
-    "core": "*",
-    "radio": "*"
-  },
-  "files": [
-    "README.md",
-    "sim7000x.ts",
-    "utils.ts"
-  ],
-  "testFiles": [
-    "test.ts"
-  ],
-  "public": false
+    "name": "pxt-sim7000x",
+    "version": "0.3.0",
+    "description": "",
+    "dependencies": {
+        "core": "*",
+        "radio": "*"
+    },
+    "files": [
+        "README.md",
+        "sim7000x.ts",
+        "usbLogger.ts",
+        "utils.ts"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "public": false
 }
