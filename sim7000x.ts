@@ -53,7 +53,7 @@ namespace sim7000x {
     }
 
     if (!forceLogDisable) { //for criticial AT command usb logging should be disabled, due to stability issues
-      usbLogger.log("Command: " + atCommand + "\r\nResponse: " + buffer, usbLogger.LoggingLevel.TRACE)
+      usbLogger.trace(`Command: ${atCommand}\r\nResponse: ${buffer}`);
     }
     return buffer
   }
@@ -81,7 +81,7 @@ namespace sim7000x {
    */
   function setupHandlers() {
     //attach listener
-    usbLogger.info("Handlers init...");
+    usbLogger.info(`Handlers init...`);
     if (!echoEnabled) { //In case echo is enabled handlers will not work!
       serial.onDataReceived("+", function () {
         basic.pause(50);
@@ -92,7 +92,7 @@ namespace sim7000x {
           for (let i = 0; i < mqttSubscribeTopics.length; i++) {
             if (data.includes(mqttSubscribeTopics[i])) {
               let message = (data.split('","')[1]); // extract message from AT Response
-              usbLogger.info('MQTT subscription on topic: "' + mqttSubscribeTopics[i] + '" received content:"' + message.slice(0, -3) + '"');
+              usbLogger.info(`MQTT subscription on topic: "${mqttSubscribeTopics[i]}" received content:"${message.slice(0, -3)}"`);
               mqttSubscribeHandler(mqttSubscribeTopics[i], message.slice(0, -3))
             }
           }
@@ -103,22 +103,22 @@ namespace sim7000x {
           let smsHeader = smsRaw.split("\n")[1];
           let senderPhoneNum = (smsHeader.split(","))[1];
           senderPhoneNum = senderPhoneNum.slice(1, senderPhoneNum.length - 1);
-          usbLogger.info("Received SMS with id:" + msgId + " message:" + smsContent);
+          usbLogger.info(`Received SMS with id: ${msgId}, message: ${smsContent}`);
           smsReceivedHandler(senderPhoneNum, smsContent);
           sendATCommand("AT+CMGD=0,1") // delete readed message, to prevent memory exhaustion
         } else if (data.includes("SHREQ:")) {
           let dataSplit = data.split(",");
           let responseCode = dataSplit[1];
           let responseLength = dataSplit[2];
-          usbLogger.info("got http response, code:" + responseCode + " ,content length:" + responseLength);
+          usbLogger.info(`Got http response. Code: ${responseCode}, content length: ${responseLength}`);
           if (responseLength.includes("700")) { //this actually means error
             requestFailed = true;
-            usbLogger.error("req fail")
+            usbLogger.error(`Request failed`)
           } else if (responseLength.includes("680")) { //this is fine
             requestFailed = false
           }
         } else if (data.includes("SHSTATE: 0")) {
-          usbLogger.info("https connection broke");
+          usbLogger.info(`Https connection broke`);
           httpsConnected = false
         }
       })
@@ -133,7 +133,7 @@ namespace sim7000x {
     while (!(gsmStatus == 1 || gsmStatus == 5)) {
       gsmStatus = getGSMRegistrationStatus();
       basic.pause(500);
-      usbLogger.info("Waiting for GSM network. GSM status was " + gsmStatus)
+      usbLogger.info(`Waiting for GSM network. GSM status was ${gsmStatus}`)
     }
   }
 
@@ -152,7 +152,7 @@ namespace sim7000x {
         tries = 0
       }
       basic.pause(1000);
-      usbLogger.info("Waiting for GPRS network connection");
+      usbLogger.info(`Waiting for GPRS network connection`);
       netStatus = sendATCommand('AT+CNACT?');
       tries++
     }
@@ -170,14 +170,14 @@ namespace sim7000x {
     let atResponse = sendATCommand("AT");
     while (!atResponse.includes("OK")) { //check in loop if echo is enabled
       atResponse = sendATCommand("AT", 1000);
-      usbLogger.info("Trying to comunicate with modem...")
+      usbLogger.info(`Trying to comunicate with modem...`)
     }
     sendATCommand("ATE " + (echoEnabled ? "1" : "0"));
     sendATCommand("AT+CMEE=2"); // extend error logging
     sendATCommand("AT+CMGF=1"); // sms message text mode
     sendATCommand("AT+CMGD=0,4"); // delete all sms messages
     setupHandlers();
-    usbLogger.info("Init done...")
+    usbLogger.info(`Init done...`)
   }
 
   function initLoggerIfNotInitialised() {
@@ -259,7 +259,7 @@ namespace sim7000x {
     sendATCommand("AT+CMGF=1"); // set text mode
     sendATCommand('AT+CMGS="' + phone_num + '"');
     sendATCommand(content + "\x1A");
-    usbLogger.info("Sent SMS message")
+    usbLogger.info(`Sent SMS message`)
   }
 
 
@@ -313,13 +313,13 @@ namespace sim7000x {
     sendATCommandCheckACK('AT+SMCONF="CLIENTID","' + clientId + '"');
     sendATCommandCheckACK('AT+SMCONF="USERNAME","' + username + '"');
     sendATCommandCheckACK('AT+SMCONF="PASSWORD","' + password + '"');
-    usbLogger.info("Establishing MQTT connection");
+    usbLogger.info(`Establishing MQTT connection`);
     if (!sendATCommandCheckACK("AT+SMCONN", 2)) {
-      usbLogger.info("MQTT connection failed, retrying...");
+      usbLogger.info(`MQTT connection failed, retrying...`);
       sendATCommand("AT+SMDISC"); //try to disconnect first if connection failed
       sendATCommandCheckACK("AT+SMCONN", -1) //try to connect second time
     }
-    usbLogger.info("MQTT connection established")
+    usbLogger.info(`MQTT connection established`)
   }
 
   /**
@@ -337,7 +337,7 @@ namespace sim7000x {
 
     let tries = 0;
     while ((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries > 6))) {
-      usbLogger.info("MQTT publish failed, retrying... attepmt:" + tries);
+      usbLogger.info(`MQTT publish failed, retrying... attepmt: ${tries}`);
       let modemNetState = sendATCommand("AT+CNACT?", -1);
       let mqttConnectionState = sendATCommand("AT+SMSTATE?", -1);
       if (modemNetState.includes("+CNACT: 0")) {
@@ -356,7 +356,7 @@ namespace sim7000x {
 
       tries++
     }
-    usbLogger.info('MQTT message on topic: "' + topic + '" published')
+    usbLogger.info(`MQTT message on topic: "${topic}" published`)
   }
 
   /**
@@ -433,14 +433,14 @@ namespace sim7000x {
   export function GSheetWriterInit() {
     ensureGsmConnection();
     ensureGprsConnection();
-    usbLogger.info("Trying to init Google sheet writer...");
+    usbLogger.info(`Trying to init Google sheet writer...`);
     sendATCommand('AT+SHCONF="HEADERLEN",350');
     sendATCommand('AT+SHCONF="BODYLEN",1024');
     sendATCommand('AT+CSSLCFG="convert",2,"google.cer"');
     sendATCommand('AT+SHSSL=1,"google.cer"');
     sendATCommand('AT+SHCONF="URL","https://script.google.com"');
     sendATCommand('AT+SHCONN');
-    usbLogger.info("Google script SSL connection established...");
+    usbLogger.info(`Google script SSL connection established...`);
     httpsConnected = true
   }
 
@@ -471,11 +471,11 @@ namespace sim7000x {
       if (response.includes("OK") || response.isEmpty()) {// sometimes this cmd return OK, but data isn't sent because connection was terminated
         basic.pause(1000);
         if ((!httpsConnected)) { //seem that Connection broke
-          usbLogger.warn("Https connection is broken. Will reinitialize gsheet");
+          usbLogger.warn(`Https connection is broken. Will reinitialize gsheet`);
           GSheetWriterInit(); //reinit
           sendATCommand(setBodyAtCMD);
           response = sendATCommand(doPostAtCmd);
-          usbLogger.info("Write request resent");
+          usbLogger.info(`Write request resent`);
           basic.pause(1000)
         }
       }
