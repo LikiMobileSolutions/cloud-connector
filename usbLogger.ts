@@ -13,6 +13,35 @@ namespace usbLogger {
     ERROR = 400,
   }
 
+  function loggingLevelLabel(loggingLevel: LoggingLevel) {
+    switch (loggingLevel) {
+      case LoggingLevel.TRACE:
+        return "TRACE";
+        break;
+      case LoggingLevel.DEBUG:
+        return "DEBUG";
+        break;
+      case LoggingLevel.INFO:
+        return "INFO";
+        break;
+      case LoggingLevel.WARN:
+        return "WARN";
+        break;
+      case LoggingLevel.ERROR:
+        return "ERROR";
+        break;
+    }
+  }
+
+  // TODO https://stackoverflow.com/a/61062698
+  // const LoggingLevelLabel: { [key in LoggingLevel]: string } = {
+  //   [LoggingLevel.TRACE]: "TRACE",
+  //   [LoggingLevel.DEBUG]: "DEBUG",
+  //   [LoggingLevel.INFO]: "INFO",
+  //   [LoggingLevel.WARN]: "WARN",
+  //   [LoggingLevel.ERROR]: "ERROR",
+  // };
+
   let usbLoggingLevel = LoggingLevel.INFO;
   let sim7000TxPin = SerialPin.P1;
   let sim7000RxPin = SerialPin.P0;
@@ -29,7 +58,7 @@ namespace usbLogger {
   //% group="1. Setup: "
   export function init(txPin: SerialPin, rxPin: SerialPin, baudRate: BaudRate, loggingLevel?: LoggingLevel) {
     if (initialised) {
-      warn("Logger is already initialised. Overriding")
+      warn(`Logger is already initialised. Overriding`)
     }
     sim7000TxPin = txPin;
     sim7000RxPin = rxPin;
@@ -56,7 +85,7 @@ namespace usbLogger {
 
     basic.pause(10);
     serial.redirectToUSB();
-    serial.writeLine(input.runningTime() + ": " + message);
+    serial.writeLine(`${input.runningTime()}\t${loggingLevelLabel(messageLevel)}\t: ${message}`);
     basic.pause(10);
     serial.redirect(sim7000RxPin, sim7000TxPin, sim7000BaudRate)
   }
