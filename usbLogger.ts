@@ -6,12 +6,14 @@
 namespace usbLogger {
 
     export enum LoggingLevel {
-        DISABLED = 0,
-        VERBOSE = 1, //Only human readable messages will be logged
-        AT_CMDS = 2, //this mean that full(cmd+response) AT communication between modem and microbit will be logged
+        TRACE = 0, // Could contain full(cmd+response) AT communication
+        DEBUG = 1,
+        INFO = 2,
+        WARN = 3,
+        ERROR = 4,
     }
 
-    let usbLoggingLevel = LoggingLevel.VERBOSE;
+    let usbLoggingLevel = LoggingLevel.INFO;
     let sim7000TxPin = SerialPin.P1;
     let sim7000RxPin = SerialPin.P0;
     let sim7000BaudRate = BaudRate.BaudRate115200;
