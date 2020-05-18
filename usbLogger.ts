@@ -43,9 +43,9 @@ namespace usbLogger {
   // };
 
   let usbLoggingLevel = LoggingLevel.INFO;
-  let sim7000TxPin = SerialPin.P1;
-  let sim7000RxPin = SerialPin.P0;
-  let sim7000BaudRate = BaudRate.BaudRate115200;
+  let appTxPin = SerialPin.P0;
+  let appRxPin = SerialPin.P1;
+  let appBaudRate = BaudRate.BaudRate115200;
 
   export let initialised = false;
 
@@ -60,12 +60,12 @@ namespace usbLogger {
     if (initialised) {
       warn(`Logger is already initialised. Overriding`)
     }
-    sim7000TxPin = txPin;
-    sim7000RxPin = rxPin;
-    sim7000BaudRate = baudRate;
+    appTxPin = txPin;
+    appRxPin = rxPin;
+    appBaudRate = baudRate;
     usbLoggingLevel = loggingLevel;
 
-    serial.redirect(sim7000RxPin, sim7000TxPin, sim7000BaudRate);
+    serial.redirect(appTxPin, appRxPin, appBaudRate);
     serial.setWriteLinePadding(0);
     serial.setRxBufferSize(128)
 
@@ -87,7 +87,7 @@ namespace usbLogger {
     serial.redirectToUSB();
     serial.writeLine(`${input.runningTime()}\t${loggingLevelLabel(messageLevel)}\t: ${message}`);
     basic.pause(10);
-    serial.redirect(sim7000RxPin, sim7000TxPin, sim7000BaudRate)
+    serial.redirect(appTxPin, appRxPin, appBaudRate)
   }
 
   export function trace(message: string) {
