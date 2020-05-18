@@ -18,8 +18,12 @@ namespace sim7000x {
 
   //Handler functions
   let smsReceivedHandler = function (fromNumber: string, message: string) {
+    usbLogger.warn(`Got SMS form ${fromNumber} but SMS received handler is not implemented!`
+        + `Skipping message ${message}`);
   };
   let mqttSubscribeHandler = function (topic: string, message: string) {
+    usbLogger.warn(`Subscribed for MQTT topic "${topic}" but MQTT subscribe handler is not implemented! `
+        + `Skipping message ${message}`);
   };
   let mqttSubscribeTopics: string[] = [];
 
