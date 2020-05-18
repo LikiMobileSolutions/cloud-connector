@@ -186,7 +186,7 @@ namespace sim7000x {
 
   function initLoggerIfNotInitialised() {
     if (!usbLogger.initialised) {
-      usbLogger.init(SerialPin.P16, SerialPin.P8, BaudRate.BaudRate115200, usbLogger.LoggingLevel.INFO)
+      usbLogger.init(SerialPin.P8, SerialPin.P16, BaudRate.BaudRate115200, usbLogger.LoggingLevel.INFO)
     }
   }
 
