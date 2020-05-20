@@ -1,5 +1,5 @@
 /**
- * usb logger block
+ * usb logger Microbit block
  */
 
 //% color=#202020 icon="\uf15c" block="Usb logger" advanced=true
@@ -52,7 +52,7 @@ namespace usbLogger {
   /**
    * Init logger module
    */
-  //% weight=100 blockId="usbLoggerInit"
+  //% weight=100 blockId="usbLogger.init"
   //% block="Usb logger Init TX: %txPin RX: %rxPin Baud: %baudRate Logging level: %loggingLevel"
   //% txPin.defl=SerialPin.P1 rxPin.defl=SerialPin.P0 baudRate.defl=BaudRate.BaudRate115200
   //% group="1. Setup: "
@@ -75,7 +75,7 @@ namespace usbLogger {
   /**
    * Log message using usb serial connection
    */
-  //% weight=100 blockId="usbLoggerLog"
+  //% weight=100 blockId="usbLogger.log"
   //% block="Log message: %message with level: %level"
   //% group="2. Logging messages:"
   export function log(message: string, messageLevel: LoggingLevel) {
