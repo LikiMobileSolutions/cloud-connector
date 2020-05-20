@@ -1,22 +1,21 @@
 /**
- * sim7000x block
+ * Liki Cloud Connector Microbit block
  */
 
-//% color=#179600 icon="\uf093" block="Sim 7000x"
-namespace sim7000x {
+//% color=#179600 icon="\uf093" block="Cloud Connector"
+namespace cloudConnector {
   //network APN name, defined by user in initialization of network functions
-  let apnName = "internet";
+  let actualApnName = "internet";
 
   //switches for debug purposes
-
   let echoEnabled = false; //should be alsways on false during normal operation
 
   //signal quality report variables
-  let last_csq_ts = 0;
-  let last_csq_value = 0;
-  let csq_min_interval = 3000;
+  const csqMinInterval = 3000;
+  let lastCsqTs = 0;
+  let lastCsqValue = 0;
 
-  //Handler functions
+  //Default handler functions
   let smsReceivedHandler = function (fromNumber: string, message: string) {
     usbLogger.warn(`Got SMS form ${fromNumber} but SMS received handler is not implemented!`
         + `Skipping message ${message}`);
@@ -33,7 +32,7 @@ namespace sim7000x {
   /**
    * (internal function)
    */
-  function sendATCommand(atCommand: string, timeout = 1000, useNewLine = true, forceLogDisable = false, additionalWaitTime = 0): string {
+  function doSendAtCommand(atCommand: string, timeout = 1000, useNewLine = true, forceLogDisable = false, additionalWaitTime = 0): string {
     serial.readString(); //way to empty buffer
     if (useNewLine) {
       serial.writeLine(atCommand)
@@ -65,14 +64,14 @@ namespace sim7000x {
   /**
    * (internal function)
    */
-  function sendATCommandCheckACK(atCommand: string, limit = 5): boolean {
+  function sendAtCommandCheckAck(atCommand: string, limit = 5): boolean {
     let tries = 0;
-    let modemResponse = sendATCommand(atCommand, -1);
+    let modemResponse = doSendAtCommand(atCommand, -1);
     while (!modemResponse.includes("OK")) {
       if (tries > limit) {
         return false
       }
-      modemResponse = sendATCommand(atCommand, -1);
+      modemResponse = doSendAtCommand(atCommand, -1);
       basic.pause(100 * tries); //adaptively extend pause during sending commands which fail
       tries++
 
@@ -101,15 +100,15 @@ namespace sim7000x {
             }
           }
         } else if (data.includes("CMTI:")) { //SMS received
-          let msgId = trimString(data.split(",")[1]);
-          let smsRaw = sendATCommand("AT+CMGR=" + msgId);
-          let smsContent = trimString(smsRaw.split("\n")[2]);
+          let msgId = cloudConnectorUtils.trimString(data.split(",")[1]);
+          let smsRaw = doSendAtCommand("AT+CMGR=" + msgId);
+          let smsContent = cloudConnectorUtils.trimString(smsRaw.split("\n")[2]);
           let smsHeader = smsRaw.split("\n")[1];
           let senderPhoneNum = (smsHeader.split(","))[1];
           senderPhoneNum = senderPhoneNum.slice(1, senderPhoneNum.length - 1);
           usbLogger.info(`Received SMS with id: ${msgId}, message: ${smsContent}`);
           smsReceivedHandler(senderPhoneNum, smsContent);
-          sendATCommand("AT+CMGD=0,1") // delete readed message, to prevent memory exhaustion
+          doSendAtCommand("AT+CMGD=0,1") // delete readed message, to prevent memory exhaustion
         } else if (data.includes("SHREQ:")) {
           let dataSplit = data.split(",");
           let responseCode = dataSplit[1];
@@ -133,9 +132,9 @@ namespace sim7000x {
    * (internal function)
    */
   function ensureGsmConnection() {
-    let gsmStatus = getGSMRegistrationStatus();
+    let gsmStatus = gsmRegistrationStatus();
     while (!(gsmStatus == 1 || gsmStatus == 5)) {
-      gsmStatus = getGSMRegistrationStatus();
+      gsmStatus = gsmRegistrationStatus();
       basic.pause(500);
       usbLogger.info(`Waiting for GSM network. GSM status was ${gsmStatus}`)
     }
@@ -146,18 +145,18 @@ namespace sim7000x {
    * (internal function)
    */
   function ensureGprsConnection() {
-    sendATCommand('AT+CNACT=1,"' + apnName + '"');
+    doSendAtCommand('AT+CNACT=1,"' + actualApnName + '"');
     basic.pause(1000);
-    let netStatus = sendATCommand('AT+CNACT?');
+    let netStatus = doSendAtCommand('AT+CNACT?');
     let tries = 0;
     while (!netStatus.includes("+CNACT: 1")) {
       if (tries >= 8) {
-        sendATCommand('AT+CNACT=1,"' + apnName + '"');
+        doSendAtCommand('AT+CNACT=1,"' + actualApnName + '"');
         tries = 0
       }
       basic.pause(1000);
       usbLogger.info(`Waiting for GPRS network connection`);
-      netStatus = sendATCommand('AT+CNACT?');
+      netStatus = doSendAtCommand('AT+CNACT?');
       tries++
     }
   }
@@ -165,21 +164,21 @@ namespace sim7000x {
   /**
    * Init module
    */
-  //% weight=100 blockId="sim7000Init"
-  //% block="sim7000x Init"
+  //% weight=100 blockId="cloudConnector.init"
+  //% block="init cloud connector"
   //% group="1. Setup: "
   export function init() {
     initLoggerIfNotInitialised();
 
-    let atResponse = sendATCommand("AT");
+    let atResponse = doSendAtCommand("AT");
     while (!atResponse.includes("OK")) { //check in loop if echo is enabled
-      atResponse = sendATCommand("AT", 1000);
+      atResponse = doSendAtCommand("AT", 1000);
       usbLogger.info(`Trying to comunicate with modem...`)
     }
-    sendATCommand("ATE " + (echoEnabled ? "1" : "0"));
-    sendATCommand("AT+CMEE=2"); // extend error logging
-    sendATCommand("AT+CMGF=1"); // sms message text mode
-    sendATCommand("AT+CMGD=0,4"); // delete all sms messages
+    doSendAtCommand("ATE " + (echoEnabled ? "1" : "0"));
+    doSendAtCommand("AT+CMEE=2"); // extend error logging
+    doSendAtCommand("AT+CMGF=1"); // sms message text mode
+    doSendAtCommand("AT+CMGD=0,4"); // delete all sms messages
     setupHandlers();
     usbLogger.info(`Init done...`)
   }
@@ -195,11 +194,12 @@ namespace sim7000x {
    * return in 1-5 range
    * return -1 if something is wrong and signal can't be fetched
    */
-  //% weight=100 blockId="getSignalQuality"
-  //% block="sim7000x Signal quality" group="2. Status: "
-  export function getSignalQuality(): number {
-    if (input.runningTime() - last_csq_ts > csq_min_interval) {
-      let signalStrengthRaw = sendATCommand("AT+CSQ");
+  //% weight=100 blockId="cloudConnector.signalQuality"
+  //% block="GSM signal quality"
+  //% group="2. Status: "
+  export function signalQuality(): number {
+    if (input.runningTime() - lastCsqTs > csqMinInterval) {
+      let signalStrengthRaw = doSendAtCommand("AT+CSQ");
       let signalStrengthLevel = -1;
       if (signalStrengthRaw.includes("+CSQ:")) {
         signalStrengthRaw = signalStrengthRaw.split(": ")[1];
@@ -208,32 +208,33 @@ namespace sim7000x {
           signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 1, 5))
         }
       }
-      last_csq_ts = input.runningTime();
-      last_csq_value = signalStrengthLevel
+      lastCsqTs = input.runningTime();
+      lastCsqValue = signalStrengthLevel
     }
-    return last_csq_value
+    return lastCsqValue
   }
 
   /**
    * Display signal strength on led matrix
    */
-  //% weight=100 blockId="displaySignalQuality"
-  //% block="sim7000x Dispaly signal quality" group="2. Status: "
+  //% weight=100 blockId="cloudConnector.displaySignalQuality"
+  //% block="dispaly GSM signal quality"
+  //% group="2. Status: "
   export function displaySignalQuality() {
-    let signalQuality = getSignalQuality();
-    if (signalQuality == 1) {
+    let signalQualityVal = signalQuality();
+    if (signalQualityVal == 1) {
       basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. . . . .\n# . . . .`)
     }
-    if (signalQuality == 2) {
+    if (signalQualityVal == 2) {
       basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. # . . .\n# # . . .`)
     }
-    if (signalQuality == 3) {
+    if (signalQualityVal == 3) {
       basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
     }
-    if (signalQuality == 4) {
+    if (signalQualityVal == 4) {
       basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
     }
-    if (signalQuality == 5) {
+    if (signalQualityVal == 5) {
       basic.showLeds(`. . . . #\n. . . # #\n. . # # #\n. # # # #\n# # # # #`)
     }
   }
@@ -241,10 +242,11 @@ namespace sim7000x {
   /**
    * return gsm network registration status as code, 1 or 5 mean sucessfull registartion
    */
-  //% weight=100 blockId="getGSMRegistrationStatus"
-  //% block="sim7000x GSM registration status" group="2. Status: "
-  export function getGSMRegistrationStatus(): number {
-    let response = sendATCommand("AT+CREG?");
+  //% weight=100 blockId="cloudConnector.gsmRegistrationStatus"
+  //% block="GSM registration status"
+  //% group="2. Status: "
+  export function gsmRegistrationStatus(): number {
+    let response = doSendAtCommand("AT+CREG?");
     let registrationStatusCode = -1;
     if (response.includes("+CREG:")) {
       response = response.split(",")[1];
@@ -255,14 +257,16 @@ namespace sim7000x {
 
   /**
    *  Send sms message
-   *  Phone number must be in format: "+(country code)(9-digit phone number)" eg. +48333222111
+   *  Phone number must be in format: "+(country code)(9-digit phone number)"
+   *  example +48333222111
    */
-  //% weight=100 blockId="sendSmsMessage"
-  //% block="sim7000x Send SMS message to: %phone_num, content: %content " group="3. GSM: "
-  export function sendSmsMessage(phone_num: string, content: string) {
-    sendATCommand("AT+CMGF=1"); // set text mode
-    sendATCommand('AT+CMGS="' + phone_num + '"');
-    sendATCommand(content + "\x1A");
+  //% weight=100 blockId="cloudConnector.sendSmsMessage"
+  //% block="send SMS message to: %phoneNumber, with content: %content"
+  //% group="3. GSM: "
+  export function sendSmsMessage(phoneNumber: string, content: string) {
+    doSendAtCommand("AT+CMGF=1"); // set text mode
+    doSendAtCommand('AT+CMGS="' + phoneNumber + '"');
+    doSendAtCommand(content + "\x1A");
     usbLogger.info(`Sent SMS message`)
   }
 
@@ -270,10 +274,11 @@ namespace sim7000x {
   /**
    * Handle received SMS message
    */
-  //% weight=100 blockId="sim7000SMSMessageReceived"
-  //% block="sim7000x on SMS received" group="3. GSM: "
+  //% weight=100 blockId="cloudConnector.onSmsReceived"
+  //% block="on SMS received from $senderNumber with $message"
+  //% group="3. GSM: "
   //% draggableParameters
-  export function smsMessageReceived(handler: (fromNumber: string, message: string) => void) {
+  export function onSmsReceived(handler: (senderNumber: string, message: string) => void) {
     smsReceivedHandler = handler
   }
 
@@ -281,13 +286,14 @@ namespace sim7000x {
   /**
    * get current date and time as string or null
    * format is "yy/MM/dd,hh:mm:ss±zz"
-   * example "10/05/06,00:01:52+08"
+   * example 10/05/06,00:01:52+08
    */
-  //% weight=100 blockId="getDateAndTime"
-  //% block="date and time from sim7000" group="3. GSM: "
-  export function getDateAndTime(): string {
-    sendATCommand("AT+CLTS=1"); // enable in case it's not enabled
-    let modemResponse = sendATCommand('AT+CCLK?');
+  //% weight=100 blockId="cloudConnector.dateAndTime"
+  //% block="date and time"
+  //% group="3. GSM: "
+  export function dateAndTime(): string {
+    doSendAtCommand("AT+CLTS=1"); // enable in case it's not enabled
+    let modemResponse = doSendAtCommand('AT+CCLK?');
     if (modemResponse.includes('+CCLK:')) {
       return modemResponse.split('"')[1]
     }
@@ -299,10 +305,11 @@ namespace sim7000x {
   /**
    * Mqtt init
    */
-  //% weight=100 blockId="sim7000MqttInit"
-  //% block="sim7000x MQTT init: APNname:%ApnName" group="4. MQTT:"
-  export function MqttInit(ApnName: string) {
-    apnName = ApnName;
+  //% weight=100 blockId="cloudConnector.initMqtt"
+  //% block="init MQTT with APN name: %apnName"
+  //% group="4. MQTT:"
+  export function initMqtt(apnName: string) {
+    actualApnName = apnName;
     ensureGsmConnection();
     ensureGprsConnection()
   }
@@ -310,18 +317,19 @@ namespace sim7000x {
   /**
    * MQTT connect
    */
-  //% weight=100 blockId="sim7000InitMQTT"
-  //% block="sim7000x MQTT connect BrokerUrl:%brokerUrl brokerPort:%brokerPort clientId:%clientId username:%username passwd:%password" group="4. MQTT:"
-  export function MqttConnect(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
-    sendATCommandCheckACK('AT+SMCONF="URL","' + brokerUrl + '","' + brokerPort + '"');
-    sendATCommandCheckACK('AT+SMCONF="CLIENTID","' + clientId + '"');
-    sendATCommandCheckACK('AT+SMCONF="USERNAME","' + username + '"');
-    sendATCommandCheckACK('AT+SMCONF="PASSWORD","' + password + '"');
+  //% weight=100 blockId="cloudConnector.connectToMqtt"
+  //% block="connect to MQTT with |broker url:%brokerUrl broker port:%brokerPort client id:%clientId username:%username password:%password"
+  //% group="4. MQTT:"
+  export function connectToMqtt(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
+    sendAtCommandCheckAck('AT+SMCONF="URL","' + brokerUrl + '","' + brokerPort + '"');
+    sendAtCommandCheckAck('AT+SMCONF="CLIENTID","' + clientId + '"');
+    sendAtCommandCheckAck('AT+SMCONF="USERNAME","' + username + '"');
+    sendAtCommandCheckAck('AT+SMCONF="PASSWORD","' + password + '"');
     usbLogger.info(`Establishing MQTT connection`);
-    if (!sendATCommandCheckACK("AT+SMCONN", 2)) {
+    if (!sendAtCommandCheckAck("AT+SMCONN", 2)) {
       usbLogger.info(`MQTT connection failed, retrying...`);
-      sendATCommand("AT+SMDISC"); //try to disconnect first if connection failed
-      sendATCommandCheckACK("AT+SMCONN", -1) //try to connect second time
+      doSendAtCommand("AT+SMDISC"); //try to disconnect first if connection failed
+      sendAtCommandCheckAck("AT+SMCONN", -1) //try to connect second time
     }
     usbLogger.info(`MQTT connection established`)
   }
@@ -329,34 +337,35 @@ namespace sim7000x {
   /**
    * MQTT publish message
    */
-  //% weight=100 blockId="sim7000MqttPublish"
-  //% block="sim7000x MQTT publish topic:%brokerUrl message:%message||qos:%qos retain:%retain" group="4. MQTT:"
+  //% weight=100 blockId="cloudConnector.publishOnMqtt"
+  //% block="publish on MQTT topic:%topic message:%message||qos:%qos retain:%retain"
+  //% group="4. MQTT:"
   //% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
-  export function MqttPublish(topic: string, message: string, qos = 1, retain = 0) {
+  export function publishOnMqtt(topic: string, message: string, qos = 1, retain = 0) {
     let cmd = 'AT+SMPUB="' + topic + '",' + (message.length) + ',' + qos + ',' + retain;
-    sendATCommand(cmd, 100, true, true);
+    doSendAtCommand(cmd, 100, true, true);
     basic.pause(100);
 
-    let modemResponse = sendATCommand(message, 3000, false, true, 1000);
+    let modemResponse = doSendAtCommand(message, 3000, false, true, 1000);
 
     let tries = 0;
     while ((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries > 6))) {
       usbLogger.info(`MQTT publish failed, retrying... attepmt: ${tries}`);
-      let modemNetState = sendATCommand("AT+CNACT?", -1);
-      let mqttConnectionState = sendATCommand("AT+SMSTATE?", -1);
+      let modemNetState = doSendAtCommand("AT+CNACT?", -1);
+      let mqttConnectionState = doSendAtCommand("AT+SMSTATE?", -1);
       if (modemNetState.includes("+CNACT: 0")) {
         //network seem disconnected, try to reinit
-        MqttInit(apnName);
-        sendATCommandCheckACK("AT+SMCONN")
+        initMqtt(actualApnName);
+        sendAtCommandCheckAck("AT+SMCONN")
       }
       if (mqttConnectionState.includes("+SMSTATE: 0")) {
         //seem like mqtt disconnection,try to reconnect
-        sendATCommand("AT+SMDISC");
-        sendATCommandCheckACK("AT+SMCONN")
+        doSendAtCommand("AT+SMDISC");
+        sendAtCommandCheckAck("AT+SMCONN")
       }
       //retry message publishing
-      sendATCommand(cmd, 100);
-      modemResponse = sendATCommand(message, 5000, false, true);
+      doSendAtCommand(cmd, 100);
+      modemResponse = doSendAtCommand(message, 5000, false, true);
 
       tries++
     }
@@ -366,10 +375,11 @@ namespace sim7000x {
   /**
    * MQTT subscribe
    */
-  //% weight=100 blockId="sim7000SubscribeMQTT"
-  //% block="sim7000x MQTT subscribe topic:%topic" group="4. MQTT:"
-  export function MqttSubscribe(topic: string) {
-    sendATCommand('AT+SMSUB="' + topic + '",1');
+  //% weight=100 blockId="cloudConnector.subscribeToMqtt"
+  //% block="subscribe to MQTT topic:%topic"
+  //% group="4. MQTT:"
+  export function subscribeToMqtt(topic: string) {
+    doSendAtCommand('AT+SMSUB="' + topic + '",1');
     mqttSubscribeTopics.push(topic)
   }
 
@@ -377,83 +387,90 @@ namespace sim7000x {
   /**
    * MQTT on subscription receive
    */
-  //% weight=100 blockId="sim7000SubsMsgReceivedMQTT"
-  //% block="sim7000x MQTT on subscribtion received" group="4. MQTT:"
+  //% weight=100 blockId="cloudConnector.onMqttMessageReceived"
+  //% block="on MQTT $topic subscribtion with $message received"
+  //% group="4. MQTT:"
   //% draggableParameters
-  export function MqttMessageReceived(handler: (topic: string, message: string) => void) {
+  export function onMqttMessageReceived(handler: (topic: string, message: string) => void) {
     mqttSubscribeHandler = handler
   }
 
 
   /**
-   * MQTT live object publish message
+   * MQTT Live Objects publish message
    */
-  //% weight=100 blockId="sim7000MqttLiveObjectPublish"
-  //% block="sim7000x Live object publish stream:%stream, timestamp:%timestamp data:%data" group="4. MQTT:"
-  export function LiveObjectPublish(stream: string, timestamp: string, data: string[]) {
+  //% weight=100 blockId="cloudConnector.publishOnLiveObjects"
+  //% block="publish data:%data with timestamp:%timestamp into Live Objects stream:%stream"
+  //% group="4. MQTT:"
+  export function publishIntoLiveObjects(data: string[], timestamp: string, stream: string) {
     let dataString = '';
     for (let i = 0; i < data.length; i++) {
       dataString += ',"' + i + '":"' + data[i] + '"'
     }
 
     let liveObjectMsg = '{ "s":"' + stream + '", "v": { "timestamp":"' + timestamp + '"' + dataString + '} }';
-    MqttPublish("dev/data", liveObjectMsg)
+    publishOnMqtt("dev/data", liveObjectMsg)
   }
 
 
   /**
    * Http init
    */
-  //% weight=100 blockId="sim7000InitHTTP"
-  //% block="sim7000x HTTP init apn:%apnName" group="5. HTTP:"
-  export function HttpInit(ApnName: string) {
-    sendATCommandCheckACK('AT+SAPBR=3,1,"APN","' + ApnName + '"');
-    sendATCommandCheckACK('AT+SAPBR=1,1');
-    sendATCommandCheckACK('AT+SAPBR=2,1');
-    if (!sendATCommandCheckACK('AT+HTTPINIT')) {
-      sendATCommandCheckACK('AT+HTTPTERM');
-      sendATCommandCheckACK('AT+HTTPINIT')
+  //% weight=100 blockId="cloudConnector.initHttp"
+  //% block="init HTTP with APN name:%apnName"
+  //% group="5. HTTP:"
+  export function initHttp(apnName: string) {
+    // TODO do we have to save apnName as actualApnName here?
+    sendAtCommandCheckAck('AT+SAPBR=3,1,"APN","' + apnName + '"');
+    sendAtCommandCheckAck('AT+SAPBR=1,1');
+    sendAtCommandCheckAck('AT+SAPBR=2,1');
+    if (!sendAtCommandCheckAck('AT+HTTPINIT')) {
+      sendAtCommandCheckAck('AT+HTTPTERM');
+      sendAtCommandCheckAck('AT+HTTPINIT')
     }
   }
 
   /**
    * Http post
    */
-  //% weight=100 blockId="sim7000HTTPPost"
-  //% block="sim7000x HTTP post url:%url data:%data" group="5. HTTP:"
-  export function HttpPost(url: string, data: string) {
-    sendATCommandCheckACK('AT+HTTPPARA="URL","' + url + '"');
-    sendATCommand("AT+HTTPDATA=" + data.length + ",1000");
+  //% weight=100 blockId="cloudConnector.httpPost"
+  //% block="post data:%data through HTTP to url:%url"
+  //% group="5. HTTP:"
+  export function httpPost(data: string, url: string) {
+    sendAtCommandCheckAck('AT+HTTPPARA="URL","' + url + '"');
+    doSendAtCommand("AT+HTTPDATA=" + data.length + ",1000");
     basic.pause(100);
-    sendATCommand(data, 1000, false);
-    sendATCommandCheckACK('AT+HTTPACTION=1')
+    doSendAtCommand(data, 1000, false);
+    sendAtCommandCheckAck('AT+HTTPACTION=1')
   }
 
   /**
-   * Google sheet writer connect
+   * initialise Google Sheet connection
    */
-  //% weight=100 blockId="sim7000GSheetWriterInit"
-  //% block="sim7000x Google Sheet Writer connect" group="5. HTTP:"
-  export function GSheetWriterInit() {
+  //% weight=100 blockId="cloudConnector.initGoogleSheetWriter"
+  //% block="init Google Sheet connection"
+  //% group="5. HTTP:"
+  export function initGoogleSheetWriter() {
     ensureGsmConnection();
     ensureGprsConnection();
     usbLogger.info(`Trying to init Google sheet writer...`);
-    sendATCommand('AT+SHCONF="HEADERLEN",350');
-    sendATCommand('AT+SHCONF="BODYLEN",1024');
-    sendATCommand('AT+CSSLCFG="convert",2,"google.cer"');
-    sendATCommand('AT+SHSSL=1,"google.cer"');
-    sendATCommand('AT+SHCONF="URL","https://script.google.com"');
-    sendATCommand('AT+SHCONN');
+    doSendAtCommand('AT+SHCONF="HEADERLEN",350');
+    doSendAtCommand('AT+SHCONF="BODYLEN",1024');
+    doSendAtCommand('AT+CSSLCFG="convert",2,"google.cer"');
+    doSendAtCommand('AT+SHSSL=1,"google.cer"');
+    doSendAtCommand('AT+SHCONF="URL","https://script.google.com"');
+    doSendAtCommand('AT+SHCONN');
     usbLogger.info(`Google script SSL connection established...`);
     httpsConnected = true
   }
 
   /**
-   * Google sheet writer write
+   * write to Google Sheet using script
    */
-  //% weight=100 blockId="sim7000GSheetWriterWrite"
-  //% block="sim7000x Google Sheet Writer send data script id:%scriptId data:%data" group="5. HTTP:"
-  export function GSheetWrite(scriptId: string, data: string[]) {
+  //% weight=100 blockId="cloudConnector.writeToGoogleSheet"
+  //% block="send data:%data to Google Sheet using script with id:%scriptId"
+  //% group="5. HTTP:"
+  export function writeToGoogleSheet(data: string[], scriptId: string) {
     requestFailed = false;
     let dataString = "";
     for (let i = 0; i < data.length; i++) {
@@ -466,19 +483,19 @@ namespace sim7000x {
     let tries = 1;
     let response = "ERROR";
     while ((response.includes("ERROR") || requestFailed) && tries <= 5) {
-      sendATCommand(setBodyAtCMD);
-      response = sendATCommand(doPostAtCmd);
+      doSendAtCommand(setBodyAtCMD);
+      response = doSendAtCommand(doPostAtCmd);
       basic.pause(500 * tries);
       if (tries == 3) {
-        GSheetWriterInit()
+        initGoogleSheetWriter()
       }
       if (response.includes("OK") || response.isEmpty()) {// sometimes this cmd return OK, but data isn't sent because connection was terminated
         basic.pause(1000);
         if ((!httpsConnected)) { //seem that Connection broke
           usbLogger.warn(`Https connection is broken. Will reinitialize gsheet`);
-          GSheetWriterInit(); //reinit
-          sendATCommand(setBodyAtCMD);
-          response = sendATCommand(doPostAtCmd);
+          initGoogleSheetWriter(); //reinit
+          doSendAtCommand(setBodyAtCMD);
+          response = doSendAtCommand(doPostAtCmd);
           usbLogger.info(`Write request resent`);
           basic.pause(1000)
         }
@@ -490,23 +507,25 @@ namespace sim7000x {
   /**
    * GPS init
    */
-  //% weight=100 blockId="sim7000InitGPS"
-  //% block="sim7000x GPS init" group="6. GPS:"
-  export function InitGPS() {
-    sendATCommandCheckACK("AT+CGNSPWR=1")
+  //% weight=100 blockId="cloudConnector.gpsInit"
+  //% block="init GPS"
+  //% group="6. GPS:"
+  export function gpsInit() {
+    sendAtCommandCheckAck("AT+CGNSPWR=1")
   }
 
   /**
-   * GNSS get position
+   * get GPS position
    */
-  //% weight=100 blockId="sim7000GPSPosition"
-  //% block="sim7000x GPS get position" group="6. GPS:"
-  export function GPSGetPosition(): string {
-    let modemResponse = sendATCommand("AT+CGNSINF");
+  //% weight=100 blockId="cloudConnector.getPosition"
+  //% block="GPS position"
+  //% group="6. GPS:"
+  export function gpsPosition(): string {
+    let modemResponse = doSendAtCommand("AT+CGNSINF");
     let position = "";
     while (!modemResponse.includes("+CGNSINF: 1,1")) {
       basic.pause(1000);
-      modemResponse = sendATCommand("AT+CGNSINF")
+      modemResponse = doSendAtCommand("AT+CGNSINF")
     }
     let tmp = modemResponse.split(",");
     position = tmp[3] + "," + tmp[4];
@@ -516,15 +535,15 @@ namespace sim7000x {
   /**
    * Send plain AT command to modem and return response from it
    */
-  //% weight=100 blockId="SendATCommand"
-  //% block="sim7000x SendATCommand %atCommand || timeout:%timeout"
-  //% timeout.defl=1000 expandableArgumentMode="toggle"
+  //% weight=100 blockId="cloudConnector.sendAtCommand"
+  //% block="response from AT command: %atCommand || with timeout:%timeout"
   //% group="7. Low level  and debug functions:"
-  export function SendATCommand(atCommand: string, timeout?: number): string {
+  //% timeout.defl=1000 expandableArgumentMode="toggle"
+  export function sendAtCommand(atCommand: string, timeout?: number): string {
     if (timeout) {
-      return sendATCommand(atCommand, timeout)
+      return doSendAtCommand(atCommand, timeout)
     } else {
-      return sendATCommand(atCommand)
+      return doSendAtCommand(atCommand)
     }
   }
 }
