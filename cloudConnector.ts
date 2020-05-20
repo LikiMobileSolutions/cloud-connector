@@ -30,6 +30,393 @@ namespace cloudConnector {
   let requestFailed = false;
 
   /**
+   * Init module
+   */
+  //% weight=100 blockId="cloudConnector.init"
+  //% group="1. Setup: "
+  //% block="init cloud connector"
+  export function init() {
+    initLoggerIfNotInitialised();
+
+    let atResponse = doSendAtCommand("AT");
+    while (!atResponse.includes("OK")) { //check in loop if echo is enabled
+      atResponse = doSendAtCommand("AT", 1000);
+      usbLogger.info(`Trying to comunicate with modem...`)
+    }
+    doSendAtCommand("ATE " + (echoEnabled ? "1" : "0"));
+    doSendAtCommand("AT+CMEE=2"); // extend error logging
+    doSendAtCommand("AT+CMGF=1"); // sms message text mode
+    doSendAtCommand("AT+CMGD=0,4"); // delete all sms messages
+    setupHandlers();
+    usbLogger.info(`Init done...`)
+  }
+
+  function initLoggerIfNotInitialised() {
+    if (!usbLogger.initialised) {
+      usbLogger.init(SerialPin.P8, SerialPin.P16, BaudRate.BaudRate115200, usbLogger.LoggingLevel.INFO)
+    }
+  }
+
+  /**
+   * get signal strength,
+   * return in 1-5 range
+   * return -1 if something is wrong and signal can't be fetched
+   */
+  //% weight=100 blockId="cloudConnector.signalQuality"
+  //% group="2. Status: "
+  //% block="GSM signal quality"
+  export function signalQuality(): number {
+    if (input.runningTime() - lastCsqTs > csqMinInterval) {
+      let signalStrengthRaw = doSendAtCommand("AT+CSQ");
+      let signalStrengthLevel = -1;
+      if (signalStrengthRaw.includes("+CSQ:")) {
+        signalStrengthRaw = signalStrengthRaw.split(": ")[1];
+        signalStrengthRaw = signalStrengthRaw.split(",")[0];
+        if (parseInt(signalStrengthRaw) != 99) { // 99 means that signal can't be fetched
+          signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 1, 5))
+        }
+      }
+      lastCsqTs = input.runningTime();
+      lastCsqValue = signalStrengthLevel
+    }
+    return lastCsqValue
+  }
+
+  /**
+   * Display signal strength on led matrix
+   */
+  //% weight=100 blockId="cloudConnector.displaySignalQuality"
+  //% group="2. Status: "
+  //% block="dispaly GSM signal quality"
+  export function displaySignalQuality() {
+    let signalQualityVal = signalQuality();
+    if (signalQualityVal == 1) {
+      basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. . . . .\n# . . . .`)
+    }
+    if (signalQualityVal == 2) {
+      basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. # . . .\n# # . . .`)
+    }
+    if (signalQualityVal == 3) {
+      basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
+    }
+    if (signalQualityVal == 4) {
+      basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
+    }
+    if (signalQualityVal == 5) {
+      basic.showLeds(`. . . . #\n. . . # #\n. . # # #\n. # # # #\n# # # # #`)
+    }
+  }
+
+  /**
+   * return gsm network registration status as code, 1 or 5 mean sucessfull registartion
+   */
+  //% weight=100 blockId="cloudConnector.gsmRegistrationStatus"
+  //% group="2. Status: "
+  //% block="GSM registration status"
+  export function gsmRegistrationStatus(): number {
+    let response = doSendAtCommand("AT+CREG?");
+    let registrationStatusCode = -1;
+    if (response.includes("+CREG:")) {
+      response = response.split(",")[1];
+      registrationStatusCode = parseInt(response.split("\r\n")[0])
+    }
+    return registrationStatusCode
+  }
+
+  /**
+   *  Send sms message
+   *  Phone number must be in format: "+(country code)(9-digit phone number)"
+   *  example +48333222111
+   */
+  //% weight=100 blockId="cloudConnector.sendSmsMessage"
+  //% group="3. GSM: "
+  //% block="send SMS message to: %phoneNumber, with content: %content"
+  export function sendSmsMessage(phoneNumber: string, content: string) {
+    doSendAtCommand("AT+CMGF=1"); // set text mode
+    doSendAtCommand('AT+CMGS="' + phoneNumber + '"');
+    doSendAtCommand(content + "\x1A");
+    usbLogger.info(`Sent SMS message`)
+  }
+
+
+  /**
+   * Handle received SMS message
+   */
+  //% weight=100 blockId="cloudConnector.onSmsReceived"
+  //% group="3. GSM: "
+  //% block="on SMS received from $senderNumber with $message"
+  //% draggableParameters
+  export function onSmsReceived(handler: (senderNumber: string, message: string) => void) {
+    smsReceivedHandler = handler
+  }
+
+
+  /**
+   * get current date and time as string or null
+   * format is "yy/MM/dd,hh:mm:ss±zz"
+   * example 10/05/06,00:01:52+08
+   */
+  //% weight=100 blockId="cloudConnector.dateAndTime"
+  //% group="3. GSM: "
+  //% block="date and time"
+  export function dateAndTime(): string {
+    doSendAtCommand("AT+CLTS=1"); // enable in case it's not enabled
+    let modemResponse = doSendAtCommand('AT+CCLK?');
+    if (modemResponse.includes('+CCLK:')) {
+      return modemResponse.split('"')[1]
+    }
+    return null
+  }
+
+  //MQTT
+
+  /**
+   * MQTT init
+   */
+  //% weight=100 blockId="cloudConnector.initMqtt"
+  //% group="4. MQTT:"
+  //% block="init MQTT with APN name: %apnName"
+  export function initMqtt(apnName: string) {
+    actualApnName = apnName;
+    ensureGsmConnection();
+    ensureGprsConnection()
+  }
+
+  /**
+   * MQTT connect
+   */
+  //% weight=100 blockId="cloudConnector.connectToMqtt"
+  //% group="4. MQTT:"
+  //% block="connect to MQTT with |broker url:%brokerUrl broker port:%brokerPort client id:%clientId username:%username password:%password"
+  export function connectToMqtt(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
+    sendAtCommandCheckAck('AT+SMCONF="URL","' + brokerUrl + '","' + brokerPort + '"');
+    sendAtCommandCheckAck('AT+SMCONF="CLIENTID","' + clientId + '"');
+    sendAtCommandCheckAck('AT+SMCONF="USERNAME","' + username + '"');
+    sendAtCommandCheckAck('AT+SMCONF="PASSWORD","' + password + '"');
+    usbLogger.info(`Establishing MQTT connection`);
+    if (!sendAtCommandCheckAck("AT+SMCONN", 2)) {
+      usbLogger.info(`MQTT connection failed, retrying...`);
+      doSendAtCommand("AT+SMDISC"); //try to disconnect first if connection failed
+      sendAtCommandCheckAck("AT+SMCONN", -1) //try to connect second time
+    }
+    usbLogger.info(`MQTT connection established`)
+  }
+
+  /**
+   * MQTT publish message
+   */
+  //% weight=100 blockId="cloudConnector.publishOnMqtt"
+  //% group="4. MQTT:"
+  //% block="publish on MQTT topic:%topic message:%message||qos:%qos retain:%retain"
+  //% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
+  export function publishOnMqtt(topic: string, message: string, qos = 1, retain = 0) {
+    let cmd = 'AT+SMPUB="' + topic + '",' + (message.length) + ',' + qos + ',' + retain;
+    doSendAtCommand(cmd, 100, true, true);
+    basic.pause(100);
+
+    let modemResponse = doSendAtCommand(message, 3000, false, true, 1000);
+
+    let tries = 0;
+    while ((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries > 6))) {
+      usbLogger.info(`MQTT publish failed, retrying... attepmt: ${tries}`);
+      let modemNetState = doSendAtCommand("AT+CNACT?", -1);
+      let mqttConnectionState = doSendAtCommand("AT+SMSTATE?", -1);
+      if (modemNetState.includes("+CNACT: 0")) {
+        //network seem disconnected, try to reinit
+        initMqtt(actualApnName);
+        sendAtCommandCheckAck("AT+SMCONN")
+      }
+      if (mqttConnectionState.includes("+SMSTATE: 0")) {
+        //seem like mqtt disconnection,try to reconnect
+        doSendAtCommand("AT+SMDISC");
+        sendAtCommandCheckAck("AT+SMCONN")
+      }
+      //retry message publishing
+      doSendAtCommand(cmd, 100);
+      modemResponse = doSendAtCommand(message, 5000, false, true);
+
+      tries++
+    }
+    usbLogger.info(`MQTT message on topic: "${topic}" published`)
+  }
+
+  /**
+   * MQTT subscribe
+   */
+  //% weight=100 blockId="cloudConnector.subscribeToMqtt"
+  //% group="4. MQTT:"
+  //% block="subscribe to MQTT topic:%topic"
+  export function subscribeToMqtt(topic: string) {
+    doSendAtCommand('AT+SMSUB="' + topic + '",1');
+    mqttSubscribeTopics.push(topic)
+  }
+
+
+  /**
+   * MQTT on subscription receive
+   */
+  //% weight=100 blockId="cloudConnector.onMqttMessageReceived"
+  //% group="4. MQTT:"
+  //% block="on MQTT $topic subscribtion with $message received"
+  //% draggableParameters
+  export function onMqttMessageReceived(handler: (topic: string, message: string) => void) {
+    mqttSubscribeHandler = handler
+  }
+
+
+  /**
+   * MQTT Live Objects publish message
+   */
+  //% weight=100 blockId="cloudConnector.publishOnLiveObjects"
+  //% group="4. MQTT:"
+  //% block="publish data:%data with timestamp:%timestamp into Live Objects stream:%stream"
+  export function publishIntoLiveObjects(data: string[], timestamp: string, stream: string) {
+    let dataString = '';
+    for (let i = 0; i < data.length; i++) {
+      dataString += ',"' + i + '":"' + data[i] + '"'
+    }
+
+    let liveObjectMsg = '{ "s":"' + stream + '", "v": { "timestamp":"' + timestamp + '"' + dataString + '} }';
+    publishOnMqtt("dev/data", liveObjectMsg)
+  }
+
+
+  /**
+   * Http init
+   */
+  //% weight=100 blockId="cloudConnector.initHttp"
+  //% group="5. HTTP:"
+  //% block="init HTTP with APN name:%apnName"
+  export function initHttp(apnName: string) {
+    // TODO do we have to save apnName as actualApnName here?
+    sendAtCommandCheckAck('AT+SAPBR=3,1,"APN","' + apnName + '"');
+    sendAtCommandCheckAck('AT+SAPBR=1,1');
+    sendAtCommandCheckAck('AT+SAPBR=2,1');
+    if (!sendAtCommandCheckAck('AT+HTTPINIT')) {
+      sendAtCommandCheckAck('AT+HTTPTERM');
+      sendAtCommandCheckAck('AT+HTTPINIT')
+    }
+  }
+
+  /**
+   * Http post
+   */
+  //% weight=100 blockId="cloudConnector.httpPost"
+  //% group="5. HTTP:"
+  //% block="post data:%data through HTTP to url:%url"
+  export function httpPost(data: string, url: string) {
+    sendAtCommandCheckAck('AT+HTTPPARA="URL","' + url + '"');
+    doSendAtCommand("AT+HTTPDATA=" + data.length + ",1000");
+    basic.pause(100);
+    doSendAtCommand(data, 1000, false);
+    sendAtCommandCheckAck('AT+HTTPACTION=1')
+  }
+
+  /**
+   * initialise Google Sheet connection
+   */
+  //% weight=100 blockId="cloudConnector.initGoogleSheetWriter"
+  //% group="5. HTTP:"
+  //% block="init Google Sheet connection"
+  export function initGoogleSheetWriter() {
+    ensureGsmConnection();
+    ensureGprsConnection();
+    usbLogger.info(`Trying to init Google sheet writer...`);
+    doSendAtCommand('AT+SHCONF="HEADERLEN",350');
+    doSendAtCommand('AT+SHCONF="BODYLEN",1024');
+    doSendAtCommand('AT+CSSLCFG="convert",2,"google.cer"');
+    doSendAtCommand('AT+SHSSL=1,"google.cer"');
+    doSendAtCommand('AT+SHCONF="URL","https://script.google.com"');
+    doSendAtCommand('AT+SHCONN');
+    usbLogger.info(`Google script SSL connection established...`);
+    httpsConnected = true
+  }
+
+  /**
+   * write to Google Sheet using script
+   */
+  //% weight=100 blockId="cloudConnector.writeToGoogleSheet"
+  //% group="5. HTTP:"
+  //% block="send data:%data to Google Sheet using script with id:%scriptId"
+  export function writeToGoogleSheet(data: string[], scriptId: string) {
+    requestFailed = false;
+    let dataString = "";
+    for (let i = 0; i < data.length; i++) {
+      dataString += data[i];
+      if (!(i == data.length - 1)) dataString += ";";
+    }
+    let setBodyAtCMD = 'AT+SHBOD="' + dataString + '",' + dataString.length;
+    let doPostAtCmd = 'AT+SHREQ="macros/s/' + scriptId + '/exec",3';
+
+    let tries = 1;
+    let response = "ERROR";
+    while ((response.includes("ERROR") || requestFailed) && tries <= 5) {
+      doSendAtCommand(setBodyAtCMD);
+      response = doSendAtCommand(doPostAtCmd);
+      basic.pause(500 * tries);
+      if (tries == 3) {
+        initGoogleSheetWriter()
+      }
+      if (response.includes("OK") || response.isEmpty()) {// sometimes this cmd return OK, but data isn't sent because connection was terminated
+        basic.pause(1000);
+        if ((!httpsConnected)) { //seem that Connection broke
+          usbLogger.warn(`Https connection is broken. Will reinitialize gsheet`);
+          initGoogleSheetWriter(); //reinit
+          doSendAtCommand(setBodyAtCMD);
+          response = doSendAtCommand(doPostAtCmd);
+          usbLogger.info(`Write request resent`);
+          basic.pause(1000)
+        }
+      }
+      tries++
+    }
+  }
+
+  /**
+   * GPS init
+   */
+  //% weight=100 blockId="cloudConnector.gpsInit"
+  //% group="6. GPS:"
+  //% block="init GPS"
+  export function gpsInit() {
+    sendAtCommandCheckAck("AT+CGNSPWR=1")
+  }
+
+  /**
+   * get GPS position
+   */
+  //% weight=100 blockId="cloudConnector.getPosition"
+  //% group="6. GPS:"
+  //% block="GPS position"
+  export function gpsPosition(): string {
+    let modemResponse = doSendAtCommand("AT+CGNSINF");
+    let position = "";
+    while (!modemResponse.includes("+CGNSINF: 1,1")) {
+      basic.pause(1000);
+      modemResponse = doSendAtCommand("AT+CGNSINF")
+    }
+    let tmp = modemResponse.split(",");
+    position = tmp[3] + "," + tmp[4];
+    return position
+  }
+
+  /**
+   * Send plain AT command to modem and return response from it
+   */
+  //% weight=100 blockId="cloudConnector.sendAtCommand"
+  //% group="7. Low level  and debug functions:"
+  //% block="response from AT command: %atCommand || with timeout:%timeout"
+  //% timeout.defl=1000 expandableArgumentMode="toggle"
+  export function sendAtCommand(atCommand: string, timeout?: number): string {
+    if (timeout) {
+      return doSendAtCommand(atCommand, timeout)
+    } else {
+      return doSendAtCommand(atCommand)
+    }
+  }
+
+
+  /**
    * (internal function)
    */
   function doSendAtCommand(atCommand: string, timeout = 1000, useNewLine = true, forceLogDisable = false, additionalWaitTime = 0): string {
@@ -158,392 +545,6 @@ namespace cloudConnector {
       usbLogger.info(`Waiting for GPRS network connection`);
       netStatus = doSendAtCommand('AT+CNACT?');
       tries++
-    }
-  }
-
-  /**
-   * Init module
-   */
-  //% weight=100 blockId="cloudConnector.init"
-  //% block="init cloud connector"
-  //% group="1. Setup: "
-  export function init() {
-    initLoggerIfNotInitialised();
-
-    let atResponse = doSendAtCommand("AT");
-    while (!atResponse.includes("OK")) { //check in loop if echo is enabled
-      atResponse = doSendAtCommand("AT", 1000);
-      usbLogger.info(`Trying to comunicate with modem...`)
-    }
-    doSendAtCommand("ATE " + (echoEnabled ? "1" : "0"));
-    doSendAtCommand("AT+CMEE=2"); // extend error logging
-    doSendAtCommand("AT+CMGF=1"); // sms message text mode
-    doSendAtCommand("AT+CMGD=0,4"); // delete all sms messages
-    setupHandlers();
-    usbLogger.info(`Init done...`)
-  }
-
-  function initLoggerIfNotInitialised() {
-    if (!usbLogger.initialised) {
-      usbLogger.init(SerialPin.P8, SerialPin.P16, BaudRate.BaudRate115200, usbLogger.LoggingLevel.INFO)
-    }
-  }
-
-  /**
-   * get signal strength,
-   * return in 1-5 range
-   * return -1 if something is wrong and signal can't be fetched
-   */
-  //% weight=100 blockId="cloudConnector.signalQuality"
-  //% block="GSM signal quality"
-  //% group="2. Status: "
-  export function signalQuality(): number {
-    if (input.runningTime() - lastCsqTs > csqMinInterval) {
-      let signalStrengthRaw = doSendAtCommand("AT+CSQ");
-      let signalStrengthLevel = -1;
-      if (signalStrengthRaw.includes("+CSQ:")) {
-        signalStrengthRaw = signalStrengthRaw.split(": ")[1];
-        signalStrengthRaw = signalStrengthRaw.split(",")[0];
-        if (parseInt(signalStrengthRaw) != 99) { // 99 means that signal can't be fetched
-          signalStrengthLevel = Math.round(Math.map(parseInt(signalStrengthRaw), 0, 31, 1, 5))
-        }
-      }
-      lastCsqTs = input.runningTime();
-      lastCsqValue = signalStrengthLevel
-    }
-    return lastCsqValue
-  }
-
-  /**
-   * Display signal strength on led matrix
-   */
-  //% weight=100 blockId="cloudConnector.displaySignalQuality"
-  //% block="dispaly GSM signal quality"
-  //% group="2. Status: "
-  export function displaySignalQuality() {
-    let signalQualityVal = signalQuality();
-    if (signalQualityVal == 1) {
-      basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. . . . .\n# . . . .`)
-    }
-    if (signalQualityVal == 2) {
-      basic.showLeds(`. . . . .\n. . . . .\n. . . . .\n. # . . .\n# # . . .`)
-    }
-    if (signalQualityVal == 3) {
-      basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
-    }
-    if (signalQualityVal == 4) {
-      basic.showLeds(`. . . . .\n. . . . .\n. . # . .\n. # # . .\n# # # . .`)
-    }
-    if (signalQualityVal == 5) {
-      basic.showLeds(`. . . . #\n. . . # #\n. . # # #\n. # # # #\n# # # # #`)
-    }
-  }
-
-  /**
-   * return gsm network registration status as code, 1 or 5 mean sucessfull registartion
-   */
-  //% weight=100 blockId="cloudConnector.gsmRegistrationStatus"
-  //% block="GSM registration status"
-  //% group="2. Status: "
-  export function gsmRegistrationStatus(): number {
-    let response = doSendAtCommand("AT+CREG?");
-    let registrationStatusCode = -1;
-    if (response.includes("+CREG:")) {
-      response = response.split(",")[1];
-      registrationStatusCode = parseInt(response.split("\r\n")[0])
-    }
-    return registrationStatusCode
-  }
-
-  /**
-   *  Send sms message
-   *  Phone number must be in format: "+(country code)(9-digit phone number)"
-   *  example +48333222111
-   */
-  //% weight=100 blockId="cloudConnector.sendSmsMessage"
-  //% block="send SMS message to: %phoneNumber, with content: %content"
-  //% group="3. GSM: "
-  export function sendSmsMessage(phoneNumber: string, content: string) {
-    doSendAtCommand("AT+CMGF=1"); // set text mode
-    doSendAtCommand('AT+CMGS="' + phoneNumber + '"');
-    doSendAtCommand(content + "\x1A");
-    usbLogger.info(`Sent SMS message`)
-  }
-
-
-  /**
-   * Handle received SMS message
-   */
-  //% weight=100 blockId="cloudConnector.onSmsReceived"
-  //% block="on SMS received from $senderNumber with $message"
-  //% group="3. GSM: "
-  //% draggableParameters
-  export function onSmsReceived(handler: (senderNumber: string, message: string) => void) {
-    smsReceivedHandler = handler
-  }
-
-
-  /**
-   * get current date and time as string or null
-   * format is "yy/MM/dd,hh:mm:ss±zz"
-   * example 10/05/06,00:01:52+08
-   */
-  //% weight=100 blockId="cloudConnector.dateAndTime"
-  //% block="date and time"
-  //% group="3. GSM: "
-  export function dateAndTime(): string {
-    doSendAtCommand("AT+CLTS=1"); // enable in case it's not enabled
-    let modemResponse = doSendAtCommand('AT+CCLK?');
-    if (modemResponse.includes('+CCLK:')) {
-      return modemResponse.split('"')[1]
-    }
-    return null
-  }
-
-  //MQTT
-
-  /**
-   * Mqtt init
-   */
-  //% weight=100 blockId="cloudConnector.initMqtt"
-  //% block="init MQTT with APN name: %apnName"
-  //% group="4. MQTT:"
-  export function initMqtt(apnName: string) {
-    actualApnName = apnName;
-    ensureGsmConnection();
-    ensureGprsConnection()
-  }
-
-  /**
-   * MQTT connect
-   */
-  //% weight=100 blockId="cloudConnector.connectToMqtt"
-  //% block="connect to MQTT with |broker url:%brokerUrl broker port:%brokerPort client id:%clientId username:%username password:%password"
-  //% group="4. MQTT:"
-  export function connectToMqtt(brokerUrl: string, brokerPort: string, clientId: string, username: string, password: string) {
-    sendAtCommandCheckAck('AT+SMCONF="URL","' + brokerUrl + '","' + brokerPort + '"');
-    sendAtCommandCheckAck('AT+SMCONF="CLIENTID","' + clientId + '"');
-    sendAtCommandCheckAck('AT+SMCONF="USERNAME","' + username + '"');
-    sendAtCommandCheckAck('AT+SMCONF="PASSWORD","' + password + '"');
-    usbLogger.info(`Establishing MQTT connection`);
-    if (!sendAtCommandCheckAck("AT+SMCONN", 2)) {
-      usbLogger.info(`MQTT connection failed, retrying...`);
-      doSendAtCommand("AT+SMDISC"); //try to disconnect first if connection failed
-      sendAtCommandCheckAck("AT+SMCONN", -1) //try to connect second time
-    }
-    usbLogger.info(`MQTT connection established`)
-  }
-
-  /**
-   * MQTT publish message
-   */
-  //% weight=100 blockId="cloudConnector.publishOnMqtt"
-  //% block="publish on MQTT topic:%topic message:%message||qos:%qos retain:%retain"
-  //% group="4. MQTT:"
-  //% qos.defl=1 retain.defl=0 expandableArgumentMode="toggle"
-  export function publishOnMqtt(topic: string, message: string, qos = 1, retain = 0) {
-    let cmd = 'AT+SMPUB="' + topic + '",' + (message.length) + ',' + qos + ',' + retain;
-    doSendAtCommand(cmd, 100, true, true);
-    basic.pause(100);
-
-    let modemResponse = doSendAtCommand(message, 3000, false, true, 1000);
-
-    let tries = 0;
-    while ((modemResponse.includes("ERROR") || modemResponse.includes("SMSTATE: 0")) && (!(tries > 6))) {
-      usbLogger.info(`MQTT publish failed, retrying... attepmt: ${tries}`);
-      let modemNetState = doSendAtCommand("AT+CNACT?", -1);
-      let mqttConnectionState = doSendAtCommand("AT+SMSTATE?", -1);
-      if (modemNetState.includes("+CNACT: 0")) {
-        //network seem disconnected, try to reinit
-        initMqtt(actualApnName);
-        sendAtCommandCheckAck("AT+SMCONN")
-      }
-      if (mqttConnectionState.includes("+SMSTATE: 0")) {
-        //seem like mqtt disconnection,try to reconnect
-        doSendAtCommand("AT+SMDISC");
-        sendAtCommandCheckAck("AT+SMCONN")
-      }
-      //retry message publishing
-      doSendAtCommand(cmd, 100);
-      modemResponse = doSendAtCommand(message, 5000, false, true);
-
-      tries++
-    }
-    usbLogger.info(`MQTT message on topic: "${topic}" published`)
-  }
-
-  /**
-   * MQTT subscribe
-   */
-  //% weight=100 blockId="cloudConnector.subscribeToMqtt"
-  //% block="subscribe to MQTT topic:%topic"
-  //% group="4. MQTT:"
-  export function subscribeToMqtt(topic: string) {
-    doSendAtCommand('AT+SMSUB="' + topic + '",1');
-    mqttSubscribeTopics.push(topic)
-  }
-
-
-  /**
-   * MQTT on subscription receive
-   */
-  //% weight=100 blockId="cloudConnector.onMqttMessageReceived"
-  //% block="on MQTT $topic subscribtion with $message received"
-  //% group="4. MQTT:"
-  //% draggableParameters
-  export function onMqttMessageReceived(handler: (topic: string, message: string) => void) {
-    mqttSubscribeHandler = handler
-  }
-
-
-  /**
-   * MQTT Live Objects publish message
-   */
-  //% weight=100 blockId="cloudConnector.publishOnLiveObjects"
-  //% block="publish data:%data with timestamp:%timestamp into Live Objects stream:%stream"
-  //% group="4. MQTT:"
-  export function publishIntoLiveObjects(data: string[], timestamp: string, stream: string) {
-    let dataString = '';
-    for (let i = 0; i < data.length; i++) {
-      dataString += ',"' + i + '":"' + data[i] + '"'
-    }
-
-    let liveObjectMsg = '{ "s":"' + stream + '", "v": { "timestamp":"' + timestamp + '"' + dataString + '} }';
-    publishOnMqtt("dev/data", liveObjectMsg)
-  }
-
-
-  /**
-   * Http init
-   */
-  //% weight=100 blockId="cloudConnector.initHttp"
-  //% block="init HTTP with APN name:%apnName"
-  //% group="5. HTTP:"
-  export function initHttp(apnName: string) {
-    // TODO do we have to save apnName as actualApnName here?
-    sendAtCommandCheckAck('AT+SAPBR=3,1,"APN","' + apnName + '"');
-    sendAtCommandCheckAck('AT+SAPBR=1,1');
-    sendAtCommandCheckAck('AT+SAPBR=2,1');
-    if (!sendAtCommandCheckAck('AT+HTTPINIT')) {
-      sendAtCommandCheckAck('AT+HTTPTERM');
-      sendAtCommandCheckAck('AT+HTTPINIT')
-    }
-  }
-
-  /**
-   * Http post
-   */
-  //% weight=100 blockId="cloudConnector.httpPost"
-  //% block="post data:%data through HTTP to url:%url"
-  //% group="5. HTTP:"
-  export function httpPost(data: string, url: string) {
-    sendAtCommandCheckAck('AT+HTTPPARA="URL","' + url + '"');
-    doSendAtCommand("AT+HTTPDATA=" + data.length + ",1000");
-    basic.pause(100);
-    doSendAtCommand(data, 1000, false);
-    sendAtCommandCheckAck('AT+HTTPACTION=1')
-  }
-
-  /**
-   * initialise Google Sheet connection
-   */
-  //% weight=100 blockId="cloudConnector.initGoogleSheetWriter"
-  //% block="init Google Sheet connection"
-  //% group="5. HTTP:"
-  export function initGoogleSheetWriter() {
-    ensureGsmConnection();
-    ensureGprsConnection();
-    usbLogger.info(`Trying to init Google sheet writer...`);
-    doSendAtCommand('AT+SHCONF="HEADERLEN",350');
-    doSendAtCommand('AT+SHCONF="BODYLEN",1024');
-    doSendAtCommand('AT+CSSLCFG="convert",2,"google.cer"');
-    doSendAtCommand('AT+SHSSL=1,"google.cer"');
-    doSendAtCommand('AT+SHCONF="URL","https://script.google.com"');
-    doSendAtCommand('AT+SHCONN');
-    usbLogger.info(`Google script SSL connection established...`);
-    httpsConnected = true
-  }
-
-  /**
-   * write to Google Sheet using script
-   */
-  //% weight=100 blockId="cloudConnector.writeToGoogleSheet"
-  //% block="send data:%data to Google Sheet using script with id:%scriptId"
-  //% group="5. HTTP:"
-  export function writeToGoogleSheet(data: string[], scriptId: string) {
-    requestFailed = false;
-    let dataString = "";
-    for (let i = 0; i < data.length; i++) {
-      dataString += data[i];
-      if (!(i == data.length - 1)) dataString += ";";
-    }
-    let setBodyAtCMD = 'AT+SHBOD="' + dataString + '",' + dataString.length;
-    let doPostAtCmd = 'AT+SHREQ="macros/s/' + scriptId + '/exec",3';
-
-    let tries = 1;
-    let response = "ERROR";
-    while ((response.includes("ERROR") || requestFailed) && tries <= 5) {
-      doSendAtCommand(setBodyAtCMD);
-      response = doSendAtCommand(doPostAtCmd);
-      basic.pause(500 * tries);
-      if (tries == 3) {
-        initGoogleSheetWriter()
-      }
-      if (response.includes("OK") || response.isEmpty()) {// sometimes this cmd return OK, but data isn't sent because connection was terminated
-        basic.pause(1000);
-        if ((!httpsConnected)) { //seem that Connection broke
-          usbLogger.warn(`Https connection is broken. Will reinitialize gsheet`);
-          initGoogleSheetWriter(); //reinit
-          doSendAtCommand(setBodyAtCMD);
-          response = doSendAtCommand(doPostAtCmd);
-          usbLogger.info(`Write request resent`);
-          basic.pause(1000)
-        }
-      }
-      tries++
-    }
-  }
-
-  /**
-   * GPS init
-   */
-  //% weight=100 blockId="cloudConnector.gpsInit"
-  //% block="init GPS"
-  //% group="6. GPS:"
-  export function gpsInit() {
-    sendAtCommandCheckAck("AT+CGNSPWR=1")
-  }
-
-  /**
-   * get GPS position
-   */
-  //% weight=100 blockId="cloudConnector.getPosition"
-  //% block="GPS position"
-  //% group="6. GPS:"
-  export function gpsPosition(): string {
-    let modemResponse = doSendAtCommand("AT+CGNSINF");
-    let position = "";
-    while (!modemResponse.includes("+CGNSINF: 1,1")) {
-      basic.pause(1000);
-      modemResponse = doSendAtCommand("AT+CGNSINF")
-    }
-    let tmp = modemResponse.split(",");
-    position = tmp[3] + "," + tmp[4];
-    return position
-  }
-
-  /**
-   * Send plain AT command to modem and return response from it
-   */
-  //% weight=100 blockId="cloudConnector.sendAtCommand"
-  //% block="response from AT command: %atCommand || with timeout:%timeout"
-  //% group="7. Low level  and debug functions:"
-  //% timeout.defl=1000 expandableArgumentMode="toggle"
-  export function sendAtCommand(atCommand: string, timeout?: number): string {
-    if (timeout) {
-      return doSendAtCommand(atCommand, timeout)
-    } else {
-      return doSendAtCommand(atCommand)
     }
   }
 }
