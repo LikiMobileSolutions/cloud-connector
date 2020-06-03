@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/pxt-sim7000x.iml" filepath="$PROJECT_DIR$/.idea/pxt-sim7000x.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/cloud-connector.iml" filepath="$PROJECT_DIR$/.idea/cloud-connector.iml" />
     </modules>
   </component>
 </project>
