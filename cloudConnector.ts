@@ -288,8 +288,8 @@ namespace cloudConnector {
   //% group="5. HTTP:"
   //% block="init HTTP with APN name:%apnName"
   export function initHttp(apnName: string) {
-    // TODO do we have to save apnName as actualApnName here?
-    sendAtCommandCheckAck('AT+SAPBR=3,1,"APN","' + apnName + '"');
+    actualApnName = apnName;
+    sendAtCommandCheckAck('AT+SAPBR=3,1,"APN","' + actualApnName + '"');
     sendAtCommandCheckAck('AT+SAPBR=1,1');
     sendAtCommandCheckAck('AT+SAPBR=2,1');
     if (!sendAtCommandCheckAck('AT+HTTPINIT')) {
