@@ -1,6 +1,6 @@
 {
     "name": "cloud-connector",
-    "version": "0.4.1",
+    "version": "0.4.2",
     "description": "Connect your Microbit into cloud using Liki Cloud Connector hardware shield based on SIM7000",
     "dependencies": {
         "core": "*",

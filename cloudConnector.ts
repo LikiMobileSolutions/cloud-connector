@@ -48,7 +48,15 @@ namespace cloudConnector {
     doSendAtCommand("AT+CMGF=1"); // sms message text mode
     doSendAtCommand("AT+CMGD=0,4"); // delete all sms messages
     setupHandlers();
-    usbLogger.info(`Init done...`)
+    forEuropeanVersionTurnOnlyCatM();
+    usbLogger.info(`Init done...`);
+  }
+
+  function forEuropeanVersionTurnOnlyCatM(){
+    let model = doSendAtCommand("ATI");
+    if(model.includes("SIM7000E")){
+      doSendAtCommand("AT+CMNB=1")
+    }
   }
 
   function initLoggerIfNotInitialised() {
